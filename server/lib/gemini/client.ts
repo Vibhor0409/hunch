@@ -61,7 +61,8 @@ async function createAuthenticated(): Promise<GeminiClient> {
   const sdk = await getSdk();
   return sdk.createClient({
     env: "sandbox",
-    auth: new sdk.HmacAuth({ apiKey, apiSecret }),
+    auth: new sdk.HmacAuth({ nonceMode: "time-based", // the sandbox rejects the default monotonic nonce (InvalidNonce)
+       apiKey, apiSecret }),
     skipWsInit: true,
   });
 }

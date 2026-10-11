@@ -4,7 +4,7 @@ Hunch is an iPhone app where you call live prediction markets blind, then see wh
 
 Built on Gemini Prediction Markets. Context by Context.dev.
 
-Source: https://github.com/Vibhor0409/hunch. API: https://hunch-api.vercel.app.
+Source: https://github.com/Vibhor0409/hunch. Note: the leaderboard holds 14 seeded demo players (see docs/SEED.md); the Players and Calls counters include them. API: https://hunch-api.vercel.app.
 
 ## Try it on your iPhone
 
