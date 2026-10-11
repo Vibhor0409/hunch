@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Hunch mark: a tilted slip with a perforated stub. Original work. -->
+  <rect width="1024" height="1024" fill="#0B0B0F"/>
+  <g transform="rotate(-9 512 512)">
+    <rect x="232" y="152" width="560" height="720" rx="64" fill="#FFB224"/>
+    <circle cx="232" cy="642" r="46" fill="#0B0B0F"/>
+    <circle cx="792" cy="642" r="46" fill="#0B0B0F"/>
+    <line x1="315" y1="642" x2="709" y2="642" stroke="#0B0B0F" stroke-width="16" stroke-dasharray="30 22"/>
+  </g>
+</svg>
