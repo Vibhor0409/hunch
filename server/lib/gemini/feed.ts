@@ -1,6 +1,15 @@
-// The card feed: every open, quoted sandbox contract that expires inside a lane.
+// The card feed: every open sandbox contract that expires inside a lane and has
+// a buy price on both sides, on the sandbox or, failing that, on production.
+//
+// Phase 2 finding (docs/GEMINI_API.md, Unknowns): the sandbox quotes about 37
+// contracts across 9 events, all within the hour plus one gold market, so the
+// Tomorrow lane would be empty. Production quotes about 4,200 contracts, and
+// 234 of them share an instrumentSymbol with an open sandbox contract. Cards
+// for those take their prices from production; orders still go to the sandbox
+// (an immediate-or-cancel with no sandbox liquidity cancels and the swipe
+// counts as practice, which the swipe route already handles).
 import type { CardQuote } from "../types";
-import { toCardQuote } from "./cards";
+import { buyPricesOf, toCardQuote } from "./cards";
 import { getPublicGemini, listActiveEventsOnce, type GeminiClient, type GeminiContract, type GeminiEvent } from "./client";
 
 /** How long one feed is reused per server instance. */
@@ -46,10 +55,32 @@ export async function fetchActiveCards(): Promise<CardQuote[]> {
 }
 
 async function loadCards(): Promise<CardQuote[]> {
-  const client = await getPublicGemini("sandbox");
-  const events = await listActiveEvents(client);
-  const now = new Date();
-  return orderCards(events, now);
+  const [sandboxEvents, productionBySymbol] = await Promise.all([
+    getPublicGemini("sandbox").then(listActiveEvents),
+    quotedProductionContracts(),
+  ]);
+  return orderCards(sandboxEvents, productionBySymbol, new Date());
+}
+
+/**
+ * Quoted production contracts by instrumentSymbol, from one unauthenticated
+ * listing. Production is optional: when it fails the feed is sandbox-only.
+ */
+async function quotedProductionContracts(): Promise<Map<string, GeminiContract>> {
+  const bySymbol = new Map<string, GeminiContract>();
+  try {
+    const client = await getPublicGemini("production");
+    for (const event of await listActiveEventsOnce(client)) {
+      for (const contract of event.contracts ?? []) {
+        if (contract.instrumentSymbol && contract.marketState === "open" && buyPricesOf(contract)) {
+          bySymbol.set(contract.instrumentSymbol, contract);
+        }
+      }
+    }
+  } catch {
+    // Sandbox-only feed this time.
+  }
+  return bySymbol;
 }
 
 /**
@@ -101,15 +132,18 @@ function mergeListings(listings: GeminiEvent[][]): GeminiEvent[] {
 /**
  * Cards in deck order: events soonest-expiring first, and one card from each
  * event in turn (round robin) so a ladder of eight strikes on one event does
- * not arrive as eight cards in a row. Contracts keep their sortOrder.
+ * not arrive as eight cards in a row. Contracts keep their sortOrder. A
+ * contract the sandbox quotes uses sandbox prices; otherwise its production
+ * copy's prices when there is one; otherwise it is not a card.
  */
-function orderCards(events: GeminiEvent[], now: Date): CardQuote[] {
+function orderCards(events: GeminiEvent[], productionBySymbol: Map<string, GeminiContract>, now: Date): CardQuote[] {
   const perEvent: CardQuote[][] = [];
   for (const event of events) {
     const contracts = [...(event.contracts ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
     const cards: CardQuote[] = [];
     for (const contract of contracts) {
-      const card = toCardQuote(event, contract, now);
+      const production = contract.instrumentSymbol ? productionBySymbol.get(contract.instrumentSymbol) : undefined;
+      const card = toCardQuote(event, contract, now) ?? (production ? toCardQuote(event, contract, now, production) : null);
       if (card) cards.push(card);
     }
     if (cards.length > 0) perEvent.push(cards);

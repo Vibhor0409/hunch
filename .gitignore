@@ -30,3 +30,6 @@ video/out/
 server/.agents/
 server/.claude/
 server/skills-lock.json
+
+# agent worktrees
+.claude/worktrees/

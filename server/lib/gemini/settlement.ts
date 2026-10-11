@@ -10,16 +10,24 @@ import { findRecentlySettledEvent, getEventOrNull, getPublicGemini, type GeminiE
  * "under_review", and an under_review contract may already show a side that
  * could still change, so that state returns null. When getEvent answers 404 on
  * every attempt (a sandbox replica miss, seen in Phase 2 for a settled 5-minute
- * event) the event is looked up among the recently settled events instead.
+ * event) the event is looked up among the recently settled events instead, and
+ * production is read as a second source for the same ticker.
  * Never guesses: a missing event, contract or side returns null and the swipe
  * waits. Throws when Gemini cannot be reached, so the settle route logs it and
  * retries on a later call.
  */
 export async function resolveOutcome(eventTicker: string, instrumentSymbol: string): Promise<Side | null> {
-  const client = await getPublicGemini("sandbox");
-  const event = (await getEventOrNull(client, eventTicker)) ?? (await findRecentlySettledEvent(client, eventTicker));
-  if (!event) return null;
-  return outcomeOf(event, instrumentSymbol);
+  const sandbox = await getPublicGemini("sandbox");
+  const event = (await getEventOrNull(sandbox, eventTicker)) ?? (await findRecentlySettledEvent(sandbox, eventTicker));
+  const outcome = event ? outcomeOf(event, instrumentSymbol) : null;
+  if (outcome) return outcome;
+
+  // Production lists the same tickers and settles them from the same index, so
+  // its settled resolutionSide is a second reading of the same result. Used
+  // only when the sandbox has not reported one.
+  const production = await getPublicGemini("production");
+  const productionEvent = await getEventOrNull(production, eventTicker);
+  return productionEvent ? outcomeOf(productionEvent, instrumentSymbol) : null;
 }
 
 /** The settled side of one contract of an event, or null. Pure, for tests. */

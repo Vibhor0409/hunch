@@ -48,26 +48,38 @@ const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD",
  *   "BTC price today at 7pm EDT: $83,100 or above?"
  * A trailing question mark on the title is removed first so it is never doubled.
  */
-export function questionFor(event: GeminiEvent, contract: GeminiContract): string {
+export function questionFor(event: GeminiEvent, contract: GeminiContract, priced: GeminiContract = contract): string {
   const title = (event.title ?? event.ticker ?? "").trim().replace(/\?+$/, "").trim();
   const label = (contract.label ?? "").trim();
   const single = (event.contracts?.length ?? 1) === 1;
   if (!label || (single && label.toLowerCase() === "yes")) return `${title}?`;
-  if (single && /^(up|down)$/i.test(label) && contract.strike?.type === "reference") {
-    const strike = Number(contract.strike.value);
-    if (Number.isFinite(strike) && strike > 0) return `${title}: ${label} from ${usd.format(strike)}?`;
+  if (single && /^(up|down)$/i.test(label)) {
+    // The reference strike is the index price at the window start. The sandbox
+    // listing can still show it as null when the production copy already has it.
+    const strike = referenceStrike(contract) ?? referenceStrike(priced);
+    if (strike !== null) return `${title}: ${label} from ${usd.format(strike)}?`;
   }
   return `${title}: ${label}?`;
 }
 
+/** strike.value of a "reference" strike as a positive number, else null. */
+function referenceStrike(contract: GeminiContract): number | null {
+  if (contract.strike?.type !== "reference") return null;
+  const value = Number(contract.strike.value);
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
 /**
  * The card for an open contract quoted on both sides and expiring inside a
- * lane, or null. Lanes come from lib/game/lanes.ts and depend on `now`.
+ * lane, or null. Identity, text, expiry and open state come from `contract`
+ * (always the sandbox copy); prices come from `priced`, which is the same
+ * contract by default or its production copy when the sandbox does not quote
+ * it (see feed.ts). Lanes come from lib/game/lanes.ts and depend on `now`.
  */
-export function toCardQuote(event: GeminiEvent, contract: GeminiContract, now: Date): CardQuote | null {
+export function toCardQuote(event: GeminiEvent, contract: GeminiContract, now: Date, priced: GeminiContract = contract): CardQuote | null {
   if (!event.ticker || !contract.instrumentSymbol) return null;
   if (contract.marketState !== "open") return null;
-  const prices = buyPricesOf(contract);
+  const prices = buyPricesOf(priced);
   if (!prices) return null;
   const expiresAt = expiresAtOf(event, contract);
   if (!expiresAt) return null;
@@ -76,7 +88,7 @@ export function toCardQuote(event: GeminiEvent, contract: GeminiContract, now: D
   return {
     eventTicker: event.ticker,
     instrumentSymbol: contract.instrumentSymbol,
-    question: questionFor(event, contract),
+    question: questionFor(event, contract, priced),
     category: event.category ?? "Other",
     lane,
     expiresAt,

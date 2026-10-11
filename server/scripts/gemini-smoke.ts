@@ -296,7 +296,11 @@ async function main(): Promise<void> {
         console.log(`production: ${prodEvents.length} active events, ${prodPriced.length} open priced contracts`);
         console.log(`production priced contracts whose instrumentSymbol also exists in the sandbox: ${overlap.length}`);
         console.log(`by lane (overlap): ${stringify(count(overlap, (p) => laneFor(p.expiresAt, now) ?? "null"))}`);
-        console.log(overlap.length > priced.length ? "feed source = production intersect sandbox" : "feed source = sandbox (fallback adds nothing)");
+        console.log(
+          overlap.length > priced.length
+            ? "feed source = hybrid: sandbox quotes first, production quotes for open sandbox contracts the sandbox does not quote"
+            : "feed source = sandbox (fallback adds nothing)",
+        );
       } finally {
         pub.close();
       }
