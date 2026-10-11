@@ -30,7 +30,9 @@ export interface PlayerStatus {
   dailyCap: number;
   paidUsedToday: number;
   paidLeftToday: number;
-  stake: number; // dollars per paid swipe
+  stake: number; // dollars per paid swipe (the player's setting)
+  balance: number; // play-money wallet balance in dollars
+  stakePerTrade: number; // the player's chosen amount per trade, 1 to 100
 }
 
 export interface OrderReceipt {
@@ -52,6 +54,8 @@ export interface Reveal {
   contracts: number;
   payoutIfRight: number; // contracts x $1 when paid, else 0
   receipt: OrderReceipt | null; // null for practice swipes that placed no order
+  cost: number; // dollars debited from the wallet (contracts x price), 0 for practice
+  balanceAfter: number; // wallet balance after this swipe
   status: PlayerStatus;
 }
 
@@ -119,4 +123,21 @@ export interface CardContext {
   sourceUrl: string | null;
   sourceDomain: string | null;
   cached: boolean;
+}
+
+/** Play-money wallet (F8). Every paid swipe debits the cost; settlement credits the payout. */
+export interface WalletTx {
+  id: string;
+  kind: "stake" | "payout" | "reset";
+  amount: number; // negative for a stake, positive for a payout or reset
+  balanceAfter: number;
+  note: string | null; // short label, for example the question
+  createdAt: string; // ISO 8601
+}
+
+export interface Wallet {
+  balance: number;
+  stakePerTrade: number;
+  startingBalance: number; // 1000
+  transactions: WalletTx[]; // newest first, up to 50
 }

@@ -58,3 +58,22 @@ create table if not exists feed_snapshot (
   fetched_at timestamptz not null default now()
 );
 alter table feed_snapshot enable row level security;
+
+-- Play-money wallet (F8, added 4:20 PM). Balance moves with every paid swipe and settlement.
+alter table players add column if not exists balance numeric(12,2) not null default 1000.00;
+alter table players add column if not exists stake_per_trade numeric(8,2) not null default 1.00 check (stake_per_trade >= 1 and stake_per_trade <= 100);
+create table if not exists wallet_tx (
+  id uuid primary key default gen_random_uuid(),
+  player_id uuid not null references players(id) on delete cascade,
+  swipe_id uuid references swipes(id) on delete set null,
+  kind text not null check (kind in ('stake', 'payout', 'reset')),
+  amount numeric(12,2) not null,
+  balance_after numeric(12,2) not null,
+  note text,
+  created_at timestamptz not null default now()
+);
+create index if not exists wallet_tx_player_idx on wallet_tx (player_id, created_at desc);
+alter table wallet_tx enable row level security;
+create or replace function adjust_balance(p_player uuid, p_delta numeric) returns numeric language sql as $$
+  update players set balance = balance + p_delta where id = p_player returning balance;
+$$;

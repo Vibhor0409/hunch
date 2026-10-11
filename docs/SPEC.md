@@ -76,9 +76,17 @@
 
 Approved add-on for the Context.dev bonus track. Full spec in `docs/CONTEXT_DEV.md`: a Context button flips the card to a back with two to three lines of live web context and a source link, cached per market and credit-guarded. Blind still means blind: no odds in context text. Backend in Phase 2 (context-integrator), UI in Phase 4 (ui-designer).
 
+## P1 (added 4:20 PM): F8. Play-money wallet and amount per trade
+
+- Every player starts with $1,000 of play money (not real, not redeemable). The Deck header shows the balance.
+- Settings (gear on the Me tab or a Settings tab): "Amount per trade" with presets $1, $2, $5, $10, $25 and a custom field (1 to 100), saved on the server (`POST /api/settings`); a "Reset wallet to $1,000" button for demos.
+- A paid swipe debits cost = contracts x price (contracts = amount / price, floored to 2 decimals) from the wallet and places the sandbox order when the card is tradable (the receipt still shows the real order id and its status). Paid now means wallet-funded, whether or not the sandbox order filled. A swipe is practice only when the daily cap is reached or the balance is below the amount.
+- Settlement credits payout = contracts x $1 on a win. Every movement is a wallet transaction shown on the Wallet screen (`GET /api/wallet`), newest first.
+- The level table's stake column becomes the default amount for new players; the player's setting overrides it.
+
 ## Out of scope
 
-Web UI of any kind, App Store or TestFlight builds today, push notifications, LLM rewrites, streaks, WebSockets, auth beyond names, real money, redeemable coins.
+Web UI of any kind, App Store or TestFlight builds today, push notifications, LLM rewrites, streaks, WebSockets, auth beyond names, real money, redeemable coins (the wallet is play money).
 
 ## Brand and visual direction
 

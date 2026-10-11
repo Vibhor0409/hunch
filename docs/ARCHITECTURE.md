@@ -63,6 +63,9 @@
 | `GET /api/leaderboard` | | 200 `{ rows: LeaderboardRow[], counters: Counters }` |
 | `GET /api/profile?playerId=` | | 200 `Profile` (with `recent`) |
 | `GET /api/context?eventTicker=&instrumentSymbol=&playerId=` | | 200 `CardContext` (cached per market; `available: false` when no context or credits low) |
+| `GET /api/wallet?playerId=` | | 200 `Wallet` (balance, stakePerTrade, last 50 transactions) |
+| `POST /api/settings` | `{ playerId, stakePerTrade }` | 200 `PlayerStatus`; 400 `{ error: "invalid_stake" }` (1 to 100) |
+| `POST /api/wallet/reset` | `{ playerId }` | 200 `Wallet` (balance back to 1000, a reset transaction) |
 
 CORS is not needed for the native app, but keep responses JSON with correct status codes.
 
