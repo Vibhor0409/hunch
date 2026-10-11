@@ -56,3 +56,4 @@ Build started 2:12 PM, about 22 minutes behind the 1:50 PM start the targets ass
 - 3:49 PM Sandbox key works with HmacAuth nonceMode time-based (monotonic gives InvalidNonce). Test order placed: id 145853902277584029, quantity 7.14 at 0.14 accepted (fractions WORK), IOC cancelled with no fill. placeOrder returns filledQuantity, remainingQuantity, avgExecutionPrice. Key updated in Vercel; API redeployed to https://hunch-api.vercel.app.
 - 3:50 PM Phase 4 Expo Go update published (same QR). Production API test 11/11 with the live sandbox key.
 - 3:53 PM Phase 4 Expo Go update published: group c45dab0b-f4fd-4481-90b6-bb4cb147e169 (the earlier background attempt did not publish). Same QR.
+- 3:53 PM Repo published: https://github.com/Vibhor0409/hunch (secret scan of tree and history clean). QR opened in the browser for the human.
