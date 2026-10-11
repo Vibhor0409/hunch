@@ -551,7 +551,9 @@ describe.skipIf(!process.env.API_BASE_URL)("Hunch API happy path", () => {
     expect(typeof row.price, "price").toBe("number");
     expect(row.price as number).toBeGreaterThan(0);
     expect(row.price as number).toBeLessThan(1);
-    expect(Math.round((row.price as number) * 100), "stored price agrees with sidedWithPct").toBe(seen.sidedWithPct);
+    // The stored price is the raw buy price of the chosen side. sidedWithPct is normalized so YES and NO sum to 100,
+    // so the two differ by the spread. When a receipt exists, its price is the same raw price.
+    if (reveal?.receipt) expect(row.price as number, "stored price is the receipt price").toBeCloseTo(reveal.receipt.price, 2);
 
     if (row.result === "pending") {
       expect(row.edge, "pending has no edge").toBeNull();
