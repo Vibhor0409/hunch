@@ -1,0 +1,128 @@
+{
+  "title": "Hunch demo",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "maxSeconds": 115,
+  "notes": [
+    "Single source for timing, voiceover, captions and overlays. Seconds everywhere.",
+    "Scenes must be contiguous: each start equals the previous end. The composition length is the last end.",
+    "Traction placeholders {players} {calls} {leader} {leaderEdge} are filled by voiceover.ts (words) and by Remotion (digits).",
+    "Clips: video/capture/<clip>.mp4, portrait iPhone screen recordings. clipIn = seconds skipped from the start of the clip (the 2 second hold). rate = playback speed.",
+    "Captions are spread across the scene in proportion to their length. Edit the chunks, not the timing."
+  ],
+  "scenes": [
+    {
+      "id": "hook",
+      "kind": "kinetic",
+      "start": 0,
+      "end": 14,
+      "voiceover": "Argentina to win the final. Fifty dollars. Gone in extra time. A hat trick that never came. Fifty more, gone. The market had Spain at sixty-one percent. Your gut never told you that.",
+      "captions": [
+        "Argentina to win the final. Fifty dollars. Gone in extra time.",
+        "A hat trick that never came. Fifty more, gone.",
+        "The market had Spain at sixty-one percent.",
+        "Your gut never told you that."
+      ],
+      "overlay": ["$50 on Argentina", "$50 on a hat trick", "Market: Spain 61%"],
+      "beats": {
+        "line1": 0.4,
+        "stamp1": 3.3,
+        "line2": 4.7,
+        "stamp2": 7.4,
+        "market": 8.6,
+        "dim": 11.3
+      }
+    },
+    {
+      "id": "intro",
+      "kind": "app",
+      "start": 14,
+      "end": 22,
+      "voiceover": "Hunch lets you test your gut for a dollar, before you trust it with fifty.",
+      "captions": [
+        "Hunch lets you test your gut for a dollar, before you trust it with fifty."
+      ],
+      "overlay": "Test your gut for a dollar",
+      "segments": [
+        { "type": "clip", "clip": "intro", "start": 14, "end": 22, "clipIn": 2, "rate": 1 }
+      ]
+    },
+    {
+      "id": "blind",
+      "kind": "app",
+      "start": 22,
+      "end": 47,
+      "voiceover": "Every card is a live market from Gemini's prediction API. You call it before you see the odds. Then Hunch shows you what the market thinks, and what a dollar pays if you're right. Pick how long you want to wait: five minutes, tomorrow, or this week.",
+      "captions": [
+        "Every card is a live market from Gemini's prediction API.",
+        "You call it before you see the odds.",
+        "Then Hunch shows you what the market thinks, and what a dollar pays if you're right.",
+        "Pick how long you want to wait: five minutes, tomorrow, or this week."
+      ],
+      "overlay": "Call it blind. Then see the odds.",
+      "segments": [
+        { "type": "clip", "clip": "blind", "start": 22, "end": 47, "clipIn": 2, "rate": 1 }
+      ]
+    },
+    {
+      "id": "real",
+      "kind": "app",
+      "start": 47,
+      "end": 67,
+      "voiceover": "Each swipe places a real one-dollar order on Gemini's exchange sandbox, signed by our server. Five-minute Bitcoin markets settle before you close the app.",
+      "captions": [
+        "Each swipe places a real one-dollar order on Gemini's exchange sandbox, signed by our server.",
+        "Five-minute Bitcoin markets settle before you close the app."
+      ],
+      "overlay": "A real $1 order on every swipe",
+      "segments": [
+        { "type": "clip", "clip": "real", "start": 47, "end": 55, "clipIn": 2, "rate": 1 },
+        { "type": "title", "text": "5 minutes later", "start": 55, "end": 57 },
+        { "type": "clip", "clip": "settled", "start": 57, "end": 67, "clipIn": 2, "rate": 1 }
+      ]
+    },
+    {
+      "id": "limit",
+      "kind": "app",
+      "start": 67,
+      "end": 92,
+      "voiceover": "Copying the crowd scores zero. Being right when the market was wrong scores points, and points are the only way to raise your limit. Everyone starts at a dollar. You earn two, then three, by beating the market, and you drop back the moment you stop.",
+      "captions": [
+        "Copying the crowd scores zero.",
+        "Being right when the market was wrong scores points, and points are the only way to raise your limit.",
+        "Everyone starts at a dollar. You earn two, then three, by beating the market,",
+        "and you drop back the moment you stop."
+      ],
+      "overlay": "Lose your edge, lose the level.",
+      "segments": [
+        { "type": "clip", "clip": "limit", "start": 67, "end": 92, "clipIn": 2, "rate": 1 }
+      ]
+    },
+    {
+      "id": "traction",
+      "kind": "app",
+      "start": 92,
+      "end": 107,
+      "voiceover": "Since three o'clock, {players} hackers in this room have made {calls} calls on their iPhones, and {leader} is beating the market by {leaderEdge} points.",
+      "captions": [
+        "Since three o'clock, {players} hackers in this room have made {calls} calls on their iPhones,",
+        "and {leader} is beating the market by {leaderEdge} points."
+      ],
+      "overlay": ["{players} players", "{calls} calls", "{leader} +{leaderEdge} Edge", "built today by one person"],
+      "segments": [
+        { "type": "clip", "clip": "traction", "start": 92, "end": 105, "clipIn": 2, "rate": 1 },
+        { "type": "diagram", "start": 105, "end": 107 }
+      ]
+    },
+    {
+      "id": "end",
+      "kind": "end",
+      "start": 107,
+      "end": 115,
+      "voiceover": "Hunch. Call it blind. Earn your limit.",
+      "captions": [],
+      "overlay": ["Call it blind. Earn your limit.", "Built on Gemini Prediction Markets"]
+    }
+  ]
+}

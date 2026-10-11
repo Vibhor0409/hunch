@@ -1,0 +1,29 @@
+{
+  "name": "hunch-video",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Hunch demo video: Remotion composition, ElevenLabs voiceover, shot list",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render HunchDemo out/hunch-demo.mp4 --codec h264",
+    "compositions": "remotion compositions",
+    "voiceover": "tsx voiceover.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.534",
+    "@remotion/renderer": "4.0.534",
+    "dotenv": "^17.2.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "remotion": "4.0.534"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
