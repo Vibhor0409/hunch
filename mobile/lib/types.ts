@@ -1,7 +1,7 @@
 // Shared contracts for Hunch. Copied to lib/types.ts in Phase 1.
 // Only the orchestrator may change this file.
 
-export type Lane = "live" | "tomorrow" | "week";
+export type Lane = "live" | "tomorrow" | "week" | "later"; // later = expires beyond 7 days (elections, seasons)
 export type LaneFilter = Lane | "foryou";
 export type Side = "yes" | "no";
 export type Mode = "paid" | "practice";
@@ -14,6 +14,7 @@ export interface CardPublic {
   category: string;
   lane: Lane;
   expiresAt: string; // ISO 8601
+  tradable: boolean; // true when the instrument exists on the Gemini sandbox, so a paid swipe can place an order
 }
 
 /** Server-only: a card with its current prices. Never sent to the client. */

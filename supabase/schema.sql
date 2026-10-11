@@ -17,7 +17,7 @@ create table if not exists swipes (
   instrument_symbol text not null,
   question text not null,
   category text not null,
-  lane text not null check (lane in ('live', 'tomorrow', 'week')),
+  lane text not null check (lane in ('live', 'tomorrow', 'week', 'later')),
   side text not null check (side in ('yes', 'no')),
   price numeric(6,4) not null check (price > 0 and price < 1),
   mode text not null check (mode in ('paid', 'practice')),

@@ -57,7 +57,7 @@
 | Route | Request | Response |
 | --- | --- | --- |
 | `POST /api/join` | `{ name }` | 200 `{ playerId, name }`; 409 `{ error: "name_taken" }`; 400 `{ error: "invalid_name" }` |
-| `GET /api/feed?lane=foryou|live|tomorrow|week&playerId=` | | 200 `{ cards: CardPublic[], status: PlayerStatus }` (max 20 cards, already-swiped contracts removed) |
+| `GET /api/feed?lane=foryou|live|tomorrow|week|later&playerId=` | | 200 `{ cards: CardPublic[], status: PlayerStatus }` (max 20 cards, already-swiped contracts removed, diverse categories) |
 | `POST /api/swipe` | `{ playerId, eventTicker, instrumentSymbol, side }` | 200 `Reveal`; 409 `{ error: "already_swiped" }`; 410 `{ error: "market_closed" }`; 502 `{ error: "gemini_unavailable" }` |
 | `POST /api/settle` | none | 200 `{ settled: number }` |
 | `GET /api/leaderboard` | | 200 `{ rows: LeaderboardRow[], counters: Counters }` |

@@ -26,10 +26,12 @@
   - Live: the contract expires within 60 minutes from now.
   - Tomorrow: expires within 48 hours and is not Live.
   - This week: expires within 7 days and is neither of the above.
-  - For you: a mix; every third card is Live when Live cards exist.
+  - Later (added 4:00 PM): expires beyond 7 days, up to a year (elections, seasons, long-dated economics).
+  - For you: a mix of lanes and categories; every third card is Live when Live cards exist, and no two adjacent cards share a category when the pool allows.
 - A card shows the question (rule in `docs/GEMINI_API.md`, "Card text"), a category chip and time to close ("closes in 4m", "closes Tue 3 PM"). **No price and no percentage.**
 - Gestures: pan right = YES, pan left = NO, pan up = skip, with the card rotating as it moves, a YES or NO stamp fading in past the threshold, and a light haptic when the swipe commits (`expo-haptics`). Three buttons under the card do the same.
 - A player never sees a contract they already swiped. Skips stay on the device.
+- Cards whose instrument does not exist on the Gemini sandbox carry `tradable: false`; swiping them is scored as practice (no order) and the app says so on the reveal. The feed draws from Gemini production's public events across every category (sports, politics, economics, entertainment, crypto, commodities) so the deck is diverse.
 - Header: "Paid swipes left today: N of CAP" and the level. At zero, a "Practice" badge and the line "Practice calls still score Edge."
 - **Accept when:** `GET /api/feed` returns at least 10 cards from live Gemini data for each lane that has markets, with no prices in the payload and nothing hard-coded.
 
