@@ -58,3 +58,4 @@ Build started 2:12 PM, about 22 minutes behind the 1:50 PM start the targets ass
 - 3:53 PM Phase 4 Expo Go update published: group c45dab0b-f4fd-4481-90b6-bb4cb147e169 (the earlier background attempt did not publish). Same QR.
 - 3:53 PM Repo published: https://github.com/Vibhor0409/hunch (secret scan of tree and history clean). QR opened in the browser for the human.
 - 3:56 PM Context.dev backend merged and deployed: /api/context live on production, verified cached second call. Context agent used 11 credits, 965 remaining. Repo pushed.
+- 4:16 PM Feed v2 deployed: 322 cards, 9 categories, Later lane, tradable flag, snapshot cache (cold feed about 0.2 s), bounded quote and swipe latency. API routes: no-store, timing logs, non-tradable swipes practice without an order. Leaderboard seeded (14 players, docs/SEED.md). Production API test passed.
