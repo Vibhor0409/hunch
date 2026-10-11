@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import sample from "../../../docs/samples/context-search.json";
+import sample from "../fixtures/context-search.json";
 import { EXCLUDED_DOMAINS } from "../../lib/context/client";
 import {
   MAX_TEXT_LENGTH,

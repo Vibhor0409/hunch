@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import sample from "../../../docs/samples/context-search.json";
+import sample from "../fixtures/context-search.json";
 import { EXCLUDED_DOMAINS, freshnessFor, parseSearchResponse, queryFor, searchBody } from "../../lib/context/client";
 import {
   DEFAULT_DAILY_CREDIT_CAP,
