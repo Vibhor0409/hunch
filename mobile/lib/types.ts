@@ -109,3 +109,13 @@ export interface Profile {
   insight: string | null;
   recent: RecentCall[]; // last 10 swipes, newest first
 }
+
+/** Live context for a card back (Context.dev add-on). Never includes odds. */
+export interface CardContext {
+  available: boolean;
+  text: string | null;
+  sourceTitle: string | null;
+  sourceUrl: string | null;
+  sourceDomain: string | null;
+  cached: boolean;
+}

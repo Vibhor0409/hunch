@@ -17,6 +17,7 @@ Clock targets are Pacific time and assume a 1:50 PM start. If the build starts l
 | qa-verifier | Typechecks, unit and API tests, app flows, hard-coding and secret audits | 3, 4, 5 |
 | release-engineer | Vercel deploy of the API, EAS Update of the app, Expo Go QR, README | 3, 4, 5 |
 | video-producer | Simulator capture, ElevenLabs voiceover, Remotion render | 2 (code), 5 (run) |
+| context-integrator | Context.dev lookup, cache, credit guard, `/api/context` (add-on, `docs/CONTEXT_DEV.md`) | 2 (backend) |
 
 ## Phase 0: preflight and skills (target 1:50 to 2:00 PM)
 
@@ -49,6 +50,7 @@ Launch in parallel, in one message:
 - **game-engine:** `server/lib/game/*` with unit tests.
 - **ui-designer:** brand, theme and every P0 screen against the API contracts (real calls only; loading and error states while routes are missing).
 - **video-producer:** writes `video/` code only: `script.json`, `voiceover.ts`, `remotion/` and `SHOTLIST.md`. Skip the Maestro flows and `capture.sh` unless Phase 0 recorded a simulator.
+- **context-integrator** (add-on, backend only): `supabase/context.sql`, smoke script with a saved sample, `pick.ts` with tests, client, cache, credit guard, `/api/context`. Gate: `npx tsx scripts/context-smoke.ts` prints context for 3 real cards plus credits used and remaining.
 
 **Gate 2 (orchestrator checks each):**
 - `npx --prefix server tsx server/scripts/gemini-smoke.ts` prints active events with prices, saves `docs/samples/events.json` and `docs/samples/settled-event.json`; with `--order` (after the human confirms terms once) it places one real sandbox order.
@@ -65,7 +67,7 @@ Launch in parallel, in one message:
 
 ## Phase 4: levels and profile (target 3:05 to 3:45 PM)
 
-Parallel: **game-engine** (finalize levels and profile stats with tests), **api-builder** (profile, cap and stake from the level), **ui-designer** (Me tab level bar, category bars, insight). Then **qa-verifier** reruns everything and **release-engineer** deploys the API and publishes a new EAS Update.
+Parallel: **game-engine** (finalize levels and profile stats with tests), **api-builder** (profile, cap and stake from the level), **ui-designer** (Me tab level bar, category bars, insight, plus the F7 Context button and card back with `npx expo install expo-web-browser`). Then **qa-verifier** reruns everything and **release-engineer** deploys the API and publishes a new EAS Update.
 
 **Gate 4:** tests pass on production; the Me tab shows real stats on the human's phone.
 

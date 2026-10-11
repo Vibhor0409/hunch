@@ -70,9 +70,9 @@
 - Per category: settled calls, hit rate, average implied probability of the chosen side, total Edge. Horizontal bars sorted by Edge.
 - One insight line, using only categories with at least 3 settled calls: "Ahead of the market on {best}. Behind on {worst}."
 
-## Stretch (only with the human's go-ahead after 3:45 PM)
+## P1 (added 3:30 PM): F7. Context on every card
 
-Context.dev card back: tap a card to flip it and show two lines of live context with a source link.
+Approved add-on for the Context.dev bonus track. Full spec in `docs/CONTEXT_DEV.md`: a Context button flips the card to a back with two to three lines of live web context and a source link, cached per market and credit-guarded. Blind still means blind: no odds in context text. Backend in Phase 2 (context-integrator), UI in Phase 4 (ui-designer).
 
 ## Out of scope
 

@@ -86,18 +86,48 @@ function pricedContracts(events: readonly Event[]): PricedContract[] {
   return out;
 }
 
-/** Every active event, paginated with the API maximum page size. */
-async function listAllActiveEvents(client: Client): Promise<Event[]> {
+/** Every active event from one paginated listing with the API maximum page size. */
+async function listAllPages(client: Client): Promise<Event[]> {
   const all: Event[] = [];
   const limit = 500;
   for (let offset = 0; ; offset += limit) {
-    const page = await client.predictions.listEvents({ status: ["active"], limit, offset });
+    const page = await client.predictions.listEvents({ status: ["active"], limit, offset }, { timeoutMs: 15_000 });
     const data = page.data ?? [];
     all.push(...data);
     const total = page.pagination?.total;
     if (data.length < limit || (typeof total === "number" && all.length >= total)) break;
   }
   return all;
+}
+
+/**
+ * Three parallel listings merged by ticker, keeping quoted contract copies. The sandbox
+ * answers from replicas that disagree (one lists about 90 events with 35 quoted
+ * contracts, another about 65 with 1), so each listing's counts are printed too.
+ */
+async function listAllActiveEvents(client: Client, label: string): Promise<Event[]> {
+  const listings = await Promise.all([listAllPages(client), listAllPages(client), listAllPages(client)]);
+  const merged = new Map<string, Event>();
+  listings.forEach((listing, i) => {
+    const quoted = listing.flatMap((e) => e.contracts ?? []).filter(hasBothBuyPrices).length;
+    console.log(`${label} listing ${i + 1}: ${listing.length} events, ${quoted} quoted contracts`);
+    for (const event of listing) {
+      if (!event.ticker) continue;
+      const existing = merged.get(event.ticker);
+      if (!existing) {
+        merged.set(event.ticker, { ...event, contracts: [...(event.contracts ?? [])] });
+        continue;
+      }
+      const contracts = existing.contracts ?? [];
+      for (const contract of event.contracts ?? []) {
+        const index = contracts.findIndex((c) => c.instrumentSymbol === contract.instrumentSymbol);
+        if (index === -1) contracts.push(contract);
+        else if (!hasBothBuyPrices(contracts[index]) && hasBothBuyPrices(contract)) contracts[index] = contract;
+      }
+      existing.contracts = contracts;
+    }
+  });
+  return [...merged.values()];
 }
 
 function printContractGrid(contract: Contract): void {
@@ -110,6 +140,23 @@ function printContractGrid(contract: Contract): void {
   console.log(
     `    buy.yes=${contract.prices?.buy?.yes ?? "null"} buy.no=${contract.prices?.buy?.no ?? "null"} sell.yes=${contract.prices?.sell?.yes ?? "null"} sell.no=${contract.prices?.sell?.no ?? "null"} bestBid=${contract.prices?.bestBid ?? "null"} bestAsk=${contract.prices?.bestAsk ?? "null"} last=${contract.prices?.lastTradePrice ?? "null"} expiry=${contract.expiryDate ?? "null"}`,
   );
+}
+
+/**
+ * getEvent with up to 3 attempts on 404. The sandbox returned 404 for tickers it had just
+ * listed as active (a replica miss); the third attempt usually succeeds. Null when it does not.
+ */
+async function getEventRetrying(client: Client, eventTicker: string): Promise<Event | null> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await client.predictions.getEvent({ eventTicker }, { timeoutMs: 15_000 });
+    } catch (error) {
+      if (!(error instanceof sdk.NotFoundError)) throw error;
+      console.log(`getEvent ${eventTicker} attempt ${attempt}: 404 Event not found`);
+      if (attempt >= 3) return null;
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+  }
 }
 
 /** Rounds a price up to 2 decimals so an immediate-or-cancel buy sits at or above the ask. */
@@ -140,8 +187,8 @@ async function main(): Promise<void> {
     await save("events.json", page);
     console.log(`page: ${page.data?.length ?? 0} events, pagination=${stringify(page.pagination)}`);
 
-    const events = await listAllActiveEvents(client);
-    console.log(`all active events: ${events.length}`);
+    const events = await listAllActiveEvents(client, "sandbox");
+    console.log(`all active events (merged): ${events.length}`);
     console.log(`event.status values: ${stringify(count(events, (e) => e.status ?? "undefined"))}`);
     console.log(`event.type values: ${stringify(count(events, (e) => e.type ?? "undefined"))}`);
     console.log(`by category: ${stringify(count(events, (e) => e.category ?? "undefined"))}`);
@@ -177,7 +224,8 @@ async function main(): Promise<void> {
 
     // 2. BTC 5-minute event: getEvent and getEventStrike.
     console.log("\n== BTC 5-minute event");
-    const future = (e: Event) => (e.expiryDate ? new Date(e.expiryDate).getTime() > now.getTime() : false);
+    // At least 90 seconds left, so the event does not expire (and 404) between the listing and getEvent.
+    const future = (e: Event) => (e.expiryDate ? new Date(e.expiryDate).getTime() > now.getTime() + 90_000 : false);
     const byExpiry = (a: Event, b: Event) => new Date(a.expiryDate ?? 0).getTime() - new Date(b.expiryDate ?? 0).getTime();
     const btc = events.filter((e) => e.ticker?.startsWith("BTC05M") && future(e)).sort(byExpiry);
     let target: Event | undefined = btc[0];
@@ -188,9 +236,11 @@ async function main(): Promise<void> {
     if (!target?.ticker) throw new Error("no active event with a future expiry");
     console.log(`target ${target.ticker} title="${target.title}" expiry=${target.expiryDate} category=${target.category}`);
 
-    const detail = await client.predictions.getEvent({ eventTicker: target.ticker });
-    await save("btc05m-event.json", detail);
-    console.log(`getEvent: status=${detail.status} type=${detail.type} contracts=${detail.contracts?.length ?? 0} sourceDetails=${stringify(detail.sourceDetails)}`);
+    const fetched = await getEventRetrying(client, target.ticker);
+    const detail = fetched ?? target;
+    if (fetched) await save("btc05m-event.json", fetched);
+    else console.log("getEvent kept answering 404; printing the listing's copy of the event instead (sample not overwritten)");
+    console.log(`${fetched ? "getEvent" : "listing"}: status=${detail.status} type=${detail.type} contracts=${detail.contracts?.length ?? 0} sourceDetails=${stringify(detail.sourceDetails)}`);
     for (const contract of detail.contracts ?? []) printContractGrid(contract);
     try {
       const strike = await client.predictions.getEventStrike({ eventTicker: target.ticker });
@@ -238,7 +288,7 @@ async function main(): Promise<void> {
       console.log(`sandbox has only ${pricedEvents.size} priced events (< ${MIN_PRICED_EVENTS}): testing the production public feed fallback`);
       const pub = await sdk.createClient({ env: "production", skipWsInit: true });
       try {
-        const prodEvents = await listAllActiveEvents(pub);
+        const prodEvents = await listAllActiveEvents(pub, "production");
         const prodPriced = pricedContracts(prodEvents);
         const sandboxSymbols = new Set(allContracts.map((c) => c.instrumentSymbol).filter((s): s is string => typeof s === "string"));
         const overlap = prodPriced.filter((p) => p.contract.instrumentSymbol && sandboxSymbols.has(p.contract.instrumentSymbol));
@@ -268,7 +318,8 @@ async function main(): Promise<void> {
       let contract: Contract | undefined;
       for (const candidate of [target, ...events.filter((e) => e.ticker?.startsWith("BTC") && future(e)).sort(byExpiry)]) {
         if (!candidate.ticker) continue;
-        const fresh = await client.predictions.getEvent({ eventTicker: candidate.ticker });
+        const fresh = await getEventRetrying(client, candidate.ticker);
+        if (!fresh) continue;
         const found = (fresh.contracts ?? []).find(hasYesBuy);
         if (found) {
           orderEvent = fresh;

@@ -23,7 +23,8 @@
 | `server/lib/gemini/**`, `server/scripts/gemini-*.ts`, `docs/samples/**`, answers in `docs/GEMINI_API.md` | gemini-integrator | SDK client, feed, quotes, orders, settlement lookups |
 | `supabase/schema.sql`, `server/lib/db/**` | data-architect | Schema, typed queries |
 | `server/lib/game/**`, `server/tests/unit/**` | game-engine | Lanes, Edge, caps, levels, profile stats (pure functions) |
-| `server/app/api/**`, `server/app/route.ts` | api-builder | Route handlers and the `/` health response |
+| `server/app/api/**` (except `api/context`), `server/app/route.ts` | api-builder | Route handlers and the `/` health response |
+| `server/lib/context/**`, `server/app/api/context/**`, `server/scripts/context-smoke.ts`, `server/tests/unit/context*.test.ts`, `supabase/context.sql` | context-integrator | Context.dev lookup, cache, credit guard, `/api/context` (see `docs/CONTEXT_DEV.md`) |
 | `mobile/app/**`, `mobile/components/**`, `mobile/lib/api.ts`, `mobile/lib/storage.ts`, `mobile/lib/theme.ts`, `mobile/assets/**` | ui-designer | Screens, components, API client, theme, icon and splash |
 | `server/tests/api/**`, `mobile/.maestro/**` | qa-verifier | API tests and app flows (no source edits) |
 | `server/vercel.json`, `mobile/eas.json`, `README.md`, `scripts/release.sh` | release-engineer | Deploy, EAS Update, QR, README |
@@ -61,6 +62,7 @@
 | `POST /api/settle` | none | 200 `{ settled: number }` |
 | `GET /api/leaderboard` | | 200 `{ rows: LeaderboardRow[], counters: Counters }` |
 | `GET /api/profile?playerId=` | | 200 `Profile` (with `recent`) |
+| `GET /api/context?eventTicker=&instrumentSymbol=&playerId=` | | 200 `CardContext` (cached per market; `available: false` when no context or credits low) |
 
 CORS is not needed for the native app, but keep responses JSON with correct status codes.
 
