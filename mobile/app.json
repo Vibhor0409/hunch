@@ -39,6 +39,17 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "04129f71-6fe6-470b-85b7-d02fb1ed73ff"
+      }
+    },
+    "owner": "vibhor040907",
+    "updates": {
+      "url": "https://u.expo.dev/04129f71-6fe6-470b-85b7-d02fb1ed73ff"
+    },
+    "runtimeVersion": "exposdk:57.0.0"
   }
 }

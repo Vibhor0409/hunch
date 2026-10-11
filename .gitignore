@@ -25,3 +25,8 @@ video/audio/
 video/out/
 
 .DS_Store
+
+# tooling artifacts from marketplace skill installs
+server/.agents/
+server/.claude/
+server/skills-lock.json
