@@ -44,7 +44,7 @@ echo "Wrote $MOBILE/.env -> EXPO_PUBLIC_API_URL=$API_URL"
 
 # 2. Publish the update. expo export loads mobile/.env, so the URL is inlined.
 cd "$MOBILE"
-npx eas-cli update --channel "$CHANNEL" --message "$MESSAGE" --non-interactive
+npx eas-cli update --channel "$CHANNEL" --message "$MESSAGE" --environment preview --platform ios --non-interactive
 
 # 3. Print the Expo Go QR URLs.
 BASE="https://qr.expo.dev/eas-update?projectId=$PROJECT_ID&runtimeVersion=$RUNTIME&channel=$CHANNEL"
