@@ -14,7 +14,7 @@ Local API address for the app: http://10.43.243.182:3000
 | 2 parallel build | 2:15 to 2:45 | smoke script with samples, unknowns answered, tests | started 2:19 PM: game-engine, ui-designer, video-producer; gemini-integrator and data-architect wait for keys | |
 | 3 integration and launch | 2:45 to 3:05 | API tests on production, phone scan, real order id | API live at https://hunch-api.vercel.app; Expo Go update published; awaiting phone scan | 3:39 PM |
 | 4 levels and profile | 3:05 to 3:45 | tests on production, Me tab real stats | UI published; API tests 11/11 on production; awaiting phone check | 3:50 PM |
-| 5 video and submission | 3:45 to 4:45 | video under 1:55, README, public repo | | |
+| 5 video and submission | 3:45 to 4:45 | video under 1:55, README, public repo | README done, repo public https://github.com/Vibhor0409/hunch; video paused on the human request | 3:56 PM |
 
 Build started 2:12 PM, about 22 minutes behind the 1:50 PM start the targets assume. Shift every target by 22 minutes; the 5:00 PM deadline is fixed.
 
@@ -57,3 +57,4 @@ Build started 2:12 PM, about 22 minutes behind the 1:50 PM start the targets ass
 - 3:50 PM Phase 4 Expo Go update published (same QR). Production API test 11/11 with the live sandbox key.
 - 3:53 PM Phase 4 Expo Go update published: group c45dab0b-f4fd-4481-90b6-bb4cb147e169 (the earlier background attempt did not publish). Same QR.
 - 3:53 PM Repo published: https://github.com/Vibhor0409/hunch (secret scan of tree and history clean). QR opened in the browser for the human.
+- 3:56 PM Context.dev backend merged and deployed: /api/context live on production, verified cached second call. Context agent used 11 credits, 965 remaining. Repo pushed.
