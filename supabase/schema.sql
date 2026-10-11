@@ -50,3 +50,11 @@ select
 from players p
 left join swipes s on s.player_id = p.id
 group by p.id, p.name;
+
+-- Feed snapshot (added 4:05 PM): the latest card list, so cold API instances answer instantly.
+create table if not exists feed_snapshot (
+  key text primary key,
+  payload jsonb not null,
+  fetched_at timestamptz not null default now()
+);
+alter table feed_snapshot enable row level security;
