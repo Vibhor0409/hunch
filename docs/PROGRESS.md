@@ -10,7 +10,7 @@ Local API address for the app: http://10.43.243.182:3000
 | Phase | Target (PT) | Gate | Result | Time |
 | --- | --- | --- | --- | --- |
 | 0 preflight and skills | 1:50 to 2:00 | SKILLS_SELECTED.md, tool check, MCP status | passed (see below) | 2:14 PM |
-| 1 foundation | 2:00 to 2:15 | typechecks, build, expo-doctor, db probe | passed except db probe (waits for Supabase keys) | 2:19 PM |
+| 1 foundation | 2:00 to 2:15 | typechecks, build, expo-doctor, db probe | passed (db probe passed 3:08 PM) | 2:19 PM |
 | 2 parallel build | 2:15 to 2:45 | smoke script with samples, unknowns answered, tests | started 2:19 PM: game-engine, ui-designer, video-producer; gemini-integrator and data-architect wait for keys | |
 | 3 integration and launch | 2:45 to 3:05 | API tests on production, phone scan, real order id | | |
 | 4 levels and profile | 3:05 to 3:45 | tests on production, Me tab real stats | | |
@@ -29,10 +29,10 @@ Build started 2:12 PM, about 22 minutes behind the 1:50 PM start the targets ass
 
 ## Blockers and human checkpoints
 
-- [ ] Gemini sandbox API key and secret with trading permission -> server/.env.local
-- [ ] Supabase project URL and service role key -> server/.env.local
-- [ ] Paste supabase/schema.sql into the Supabase SQL editor
-- [ ] gh auth login, npx vercel login, npx eas-cli login
+- [x] Gemini sandbox API key and secret -> server/.env.local (3:04 PM) and Vercel production env
+- [x] Supabase provisioned through Vercel Marketplace (resource hunch-db, free plan, sfo1) and connected to Vercel project hunch-api; keys merged into server/.env.local (3:08 PM)
+- [x] schema.sql applied over the Postgres connection (3:08 PM): tables players, swipes; view leaderboard
+- [x] gh, vercel and eas logins done (2:25 PM)
 - [ ] Expo Go installed on the iPhone
 
 ## Log
@@ -44,3 +44,4 @@ Build started 2:12 PM, about 22 minutes behind the 1:50 PM start the targets ass
 - 2:40 PM video-producer DONE: video/ package (Remotion 4.0.534), script.json (7 scenes, 115 s), SHOTLIST.md for the iPhone route, voiceover.ts (ElevenLabs REST), remotion composition HunchDemo. Orchestrator verified: typecheck PASS, compositions lists HunchDemo 115.00 s. Phase 5 note: swap remotion HunchMark to match mobile/assets/images/mark.svg.
 - 2:48 PM data-architect DONE (code): lib/db client, queries, index; scripts/db-probe.ts. Typecheck PASS (orchestrator verified). Probe not yet run: Supabase keys missing. Schema unchanged.
 - 2:57 PM api-builder DONE (code, early start): six routes plus app/api/_lib helpers. Typecheck shows only the four missing @/lib/gemini imports (orchestrator verified). Full verification waits for gemini modules and keys.
+- 3:08 PM Gate 1 complete: DB PROBE PASSED (create, duplicate, insert, settle, leaderboard, counters, cascade delete). Vercel project hunch-api linked; production env has GEMINI_* and all SUPABASE_*/POSTGRES_* vars.
