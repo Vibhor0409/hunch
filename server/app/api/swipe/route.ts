@@ -2,10 +2,11 @@ import { getPlayer, insertSwipe, paidCountBetween, settledSwipes, swipedSymbols,
 import { adjustBalance } from "@/lib/db/wallet";
 import { placeBuy } from "@/lib/gemini/orders";
 import { getQuote } from "@/lib/gemini/quote";
-import { capFor, contractsFor, laDayBounds, laneFor, levelFor, pct } from "@/lib/game";
+import { capFor, contractsFor, laDayBounds, laneFor, levelFor } from "@/lib/game";
 import type { CardQuote, Mode, OrderReceipt, Reveal, Side } from "@/lib/types";
 import { TimeoutError, withTimeout } from "../_lib/async";
 import { describe, errorJson, handle, json, readJsonObject } from "../_lib/http";
+import { revealPcts } from "../_lib/odds";
 import { statusFrom } from "../_lib/status";
 import { isSide, requireString } from "../_lib/validate";
 import { round2 } from "../_lib/wallet";
@@ -153,11 +154,13 @@ export function POST(req: Request): Promise<Response> {
 
     // The new swipe is unsettled, so the level is unchanged; today's paid count and the balance move.
     const status = statusFrom({ ...player, balance: balanceAfter }, settled, paidUsedToday + (paid ? 1 : 0));
+    // Displayed odds are normalized to sum to 100; price (stored, Edge, receipt) stays the raw buy price.
+    const { yesPct, noPct, sidedWithPct } = revealPcts(quote.yesPrice, quote.noPrice, side);
     const reveal: Reveal = {
       side,
-      yesPct: pct(quote.yesPrice),
-      noPct: pct(quote.noPrice),
-      sidedWithPct: pct(price),
+      yesPct,
+      noPct,
+      sidedWithPct,
       mode,
       stake: cost,
       contracts,
