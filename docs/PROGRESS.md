@@ -12,7 +12,7 @@ Local API address for the app: http://10.43.243.182:3000
 | 0 preflight and skills | 1:50 to 2:00 | SKILLS_SELECTED.md, tool check, MCP status | passed (see below) | 2:14 PM |
 | 1 foundation | 2:00 to 2:15 | typechecks, build, expo-doctor, db probe | passed (db probe passed 3:08 PM) | 2:19 PM |
 | 2 parallel build | 2:15 to 2:45 | smoke script with samples, unknowns answered, tests | started 2:19 PM: game-engine, ui-designer, video-producer; gemini-integrator and data-architect wait for keys | |
-| 3 integration and launch | 2:45 to 3:05 | API tests on production, phone scan, real order id | | |
+| 3 integration and launch | 2:45 to 3:05 | API tests on production, phone scan, real order id | API live at https://hunch-api.vercel.app; EAS publish in progress | 3:39 PM |
 | 4 levels and profile | 3:05 to 3:45 | tests on production, Me tab real stats | | |
 | 5 video and submission | 3:45 to 4:45 | video under 1:55, README, public repo | | |
 
@@ -49,3 +49,5 @@ Build started 2:12 PM, about 22 minutes behind the 1:50 PM start the targets ass
 - 3:18 PM qa-verifier Part A: PASS on all 7 checks (API test written and skipped without API_BASE_URL; hard-coding, secret and blind audits clean). Notes: order placed before row reserved (double-tap race), yesPct+noPct may exceed 100 by the spread, leaderboard capped at 100.
 - 3:30 PM Context.dev add-on applied: files copied, CardContext type in all three copies, SPEC F7, ARCHITECTURE and BUILD_PLAN updated, context.sql applied (card_context, context_usage), CONTEXT_DEV_API_KEY in server env and Vercel production.
 - 3:36 PM gemini-integrator DONE except live order: lib/gemini (hybrid sandbox+production feed, 196 cards: live 84, tomorrow 52, week 60; resolutionSide confirmed; fractional 0.01 grid). BLOCKED on orders: the provided key is a production master key; sandbox returns InvalidApiKey. Need a sandbox primary-account key with Trading. Gate 2 verified by orchestrator: smoke OK, check OK, typecheck 0 errors, tests pass, build pass.
+- 3:39 PM API deployed to Vercel production: https://hunch-api.vercel.app (health 200). Expo Go QR saved to docs/expo-go-qr.svg; QR URL: https://qr.expo.dev/eas-update?projectId=04129f71-6fe6-470b-85b7-d02fb1ed73ff&runtimeVersion=exposdk:57.0.0&channel=preview
+- 3:40 PM Production API test: 11/11 passed against https://hunch-api.vercel.app. QA players removed from the database.
