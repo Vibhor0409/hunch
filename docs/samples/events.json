@@ -2921,17 +2921,17 @@
       "volumeDelta24hPct": "0"
     },
     {
-      "id": "205507",
-      "title": "BTC price today at 6:40pm EDT",
-      "slug": "btc-price-today-at-640pm-edt",
+      "id": "205515",
+      "title": "BTC price today at 6:50pm EDT",
+      "slug": "btc-price-today-at-650pm-edt",
       "type": "binary",
       "category": "Crypto",
-      "ticker": "BTC05M2610112240",
+      "ticker": "BTC05M2610112250",
       "status": "active",
-      "createdAt": "2026-10-11T21:30:39.743Z",
+      "createdAt": "2026-10-11T21:40:40.453Z",
       "contracts": [
         {
-          "id": "205507-298481",
+          "id": "205515-298489",
           "label": "Up",
           "description": {
             "data": {},
@@ -2939,7 +2939,7 @@
               {
                 "data": {},
                 "marks": [],
-                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 6:40pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
+                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 6:50pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
                 "nodeType": "text"
               }
             ],
@@ -2950,19 +2950,19 @@
             "sell": {}
           },
           "status": "active",
-          "createdAt": "2026-10-11T21:30:39.743Z",
+          "createdAt": "2026-10-11T21:40:40.453Z",
           "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
           "ticker": "UP",
-          "instrumentSymbol": "GEMI-BTC05M2610112240-UP",
+          "instrumentSymbol": "GEMI-BTC05M2610112250-UP",
           "marketState": "open",
           "abbreviatedName": "Up",
           "color": "#4CAF50",
-          "expiryDate": "2026-10-11T22:40:00.000Z",
-          "effectiveDate": "2026-10-11T22:35:00.000Z",
+          "expiryDate": "2026-10-11T22:50:00.000Z",
+          "effectiveDate": "2026-10-11T22:45:00.000Z",
           "sortOrder": 0,
           "strike": {
             "type": "reference",
-            "availableAt": "2026-10-11T22:35:00.000Z"
+            "availableAt": "2026-10-11T22:45:00.000Z"
           },
           "source": "LS-LRRR-XBTUSD",
           "isCombo": false,
@@ -2973,10 +2973,10 @@
           "priceMinimum": "0.01"
         }
       ],
-      "effectiveDate": "2026-10-11T21:30:39.743Z",
+      "effectiveDate": "2026-10-11T21:40:40.453Z",
       "isLive": true,
       "participants": [],
-      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 6:40pm ET",
+      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 6:50pm ET",
       "imageUrl": "https://assets.gemini.com/predictions/images/btc_ace6c0f4-f500-4b7d-a66c-a3ea5ea1d9e9.avif",
       "series": "BTC05M",
       "volume": "0",
@@ -2984,8 +2984,8 @@
       "tags": [
         "Bitcoin"
       ],
-      "expiryDate": "2026-10-11T22:40:00.000Z",
-      "startTime": "2026-10-11T22:35:00.000Z",
+      "expiryDate": "2026-10-11T22:50:00.000Z",
+      "startTime": "2026-10-11T22:45:00.000Z",
       "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
       "subcategory": {
         "id": 222,
@@ -3281,17 +3281,17 @@
       "volumeDelta24hPct": "0"
     },
     {
-      "id": "205511",
-      "title": "BTC price today at 6:45pm EDT",
-      "slug": "btc-price-today-at-645pm-edt",
+      "id": "205523",
+      "title": "BTC price today at 6:55pm EDT",
+      "slug": "btc-price-today-at-655pm-edt",
       "type": "binary",
       "category": "Crypto",
-      "ticker": "BTC05M2610112245",
+      "ticker": "BTC05M2610112255",
       "status": "active",
-      "createdAt": "2026-10-11T21:36:40.996Z",
+      "createdAt": "2026-10-11T21:46:40.423Z",
       "contracts": [
         {
-          "id": "205511-298485",
+          "id": "205523-298497",
           "label": "Up",
           "description": {
             "data": {},
@@ -3299,7 +3299,7 @@
               {
                 "data": {},
                 "marks": [],
-                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 6:45pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
+                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 6:55pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
                 "nodeType": "text"
               }
             ],
@@ -3310,19 +3310,19 @@
             "sell": {}
           },
           "status": "active",
-          "createdAt": "2026-10-11T21:36:40.996Z",
+          "createdAt": "2026-10-11T21:46:40.423Z",
           "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
           "ticker": "UP",
-          "instrumentSymbol": "GEMI-BTC05M2610112245-UP",
+          "instrumentSymbol": "GEMI-BTC05M2610112255-UP",
           "marketState": "open",
           "abbreviatedName": "Up",
           "color": "#4CAF50",
-          "expiryDate": "2026-10-11T22:45:00.000Z",
-          "effectiveDate": "2026-10-11T22:40:00.000Z",
+          "expiryDate": "2026-10-11T22:55:00.000Z",
+          "effectiveDate": "2026-10-11T22:50:00.000Z",
           "sortOrder": 0,
           "strike": {
             "type": "reference",
-            "availableAt": "2026-10-11T22:40:00.000Z"
+            "availableAt": "2026-10-11T22:50:00.000Z"
           },
           "source": "LS-LRRR-XBTUSD",
           "isCombo": false,
@@ -3333,10 +3333,10 @@
           "priceMinimum": "0.01"
         }
       ],
-      "effectiveDate": "2026-10-11T21:36:40.996Z",
+      "effectiveDate": "2026-10-11T21:46:40.423Z",
       "isLive": true,
       "participants": [],
-      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 6:45pm ET",
+      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 6:55pm ET",
       "imageUrl": "https://assets.gemini.com/predictions/images/btc_ace6c0f4-f500-4b7d-a66c-a3ea5ea1d9e9.avif",
       "series": "BTC05M",
       "volume": "0",
@@ -3344,8 +3344,8 @@
       "tags": [
         "Bitcoin"
       ],
-      "expiryDate": "2026-10-11T22:45:00.000Z",
-      "startTime": "2026-10-11T22:40:00.000Z",
+      "expiryDate": "2026-10-11T22:55:00.000Z",
+      "startTime": "2026-10-11T22:50:00.000Z",
       "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
       "subcategory": {
         "id": 222,
@@ -3631,17 +3631,17 @@
       "volumeDelta24hPct": "0"
     },
     {
-      "id": "205515",
-      "title": "BTC price today at 6:50pm EDT",
-      "slug": "btc-price-today-at-650pm-edt",
+      "id": "205527",
+      "title": "BTC price today at 7pm EDT",
+      "slug": "btc-price-today-at-7pm-edt",
       "type": "binary",
       "category": "Crypto",
-      "ticker": "BTC05M2610112250",
+      "ticker": "BTC05M2610112300",
       "status": "active",
-      "createdAt": "2026-10-11T21:40:40.453Z",
+      "createdAt": "2026-10-11T21:50:40.043Z",
       "contracts": [
         {
-          "id": "205515-298489",
+          "id": "205527-298501",
           "label": "Up",
           "description": {
             "data": {},
@@ -3649,7 +3649,7 @@
               {
                 "data": {},
                 "marks": [],
-                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 6:50pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
+                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 7pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
                 "nodeType": "text"
               }
             ],
@@ -3660,19 +3660,19 @@
             "sell": {}
           },
           "status": "active",
-          "createdAt": "2026-10-11T21:40:40.453Z",
+          "createdAt": "2026-10-11T21:50:40.043Z",
           "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
           "ticker": "UP",
-          "instrumentSymbol": "GEMI-BTC05M2610112250-UP",
+          "instrumentSymbol": "GEMI-BTC05M2610112300-UP",
           "marketState": "open",
           "abbreviatedName": "Up",
           "color": "#4CAF50",
-          "expiryDate": "2026-10-11T22:50:00.000Z",
-          "effectiveDate": "2026-10-11T22:45:00.000Z",
+          "expiryDate": "2026-10-11T23:00:00.000Z",
+          "effectiveDate": "2026-10-11T22:55:00.000Z",
           "sortOrder": 0,
           "strike": {
             "type": "reference",
-            "availableAt": "2026-10-11T22:45:00.000Z"
+            "availableAt": "2026-10-11T22:55:00.000Z"
           },
           "source": "LS-LRRR-XBTUSD",
           "isCombo": false,
@@ -3683,10 +3683,10 @@
           "priceMinimum": "0.01"
         }
       ],
-      "effectiveDate": "2026-10-11T21:40:40.453Z",
+      "effectiveDate": "2026-10-11T21:50:40.043Z",
       "isLive": true,
       "participants": [],
-      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 6:50pm ET",
+      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 7pm ET",
       "imageUrl": "https://assets.gemini.com/predictions/images/btc_ace6c0f4-f500-4b7d-a66c-a3ea5ea1d9e9.avif",
       "series": "BTC05M",
       "volume": "0",
@@ -3694,8 +3694,8 @@
       "tags": [
         "Bitcoin"
       ],
-      "expiryDate": "2026-10-11T22:50:00.000Z",
-      "startTime": "2026-10-11T22:45:00.000Z",
+      "expiryDate": "2026-10-11T23:00:00.000Z",
+      "startTime": "2026-10-11T22:55:00.000Z",
       "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
       "subcategory": {
         "id": 222,
@@ -4027,17 +4027,17 @@
       "volumeDelta24hPct": "0"
     },
     {
-      "id": "205523",
-      "title": "BTC price today at 6:55pm EDT",
-      "slug": "btc-price-today-at-655pm-edt",
+      "id": "205532",
+      "title": "BTC price today at 7:05pm EDT",
+      "slug": "btc-price-today-at-705pm-edt",
       "type": "binary",
       "category": "Crypto",
-      "ticker": "BTC05M2610112255",
+      "ticker": "BTC05M2610112305",
       "status": "active",
-      "createdAt": "2026-10-11T21:46:40.423Z",
+      "createdAt": "2026-10-11T21:56:53.486Z",
       "contracts": [
         {
-          "id": "205523-298497",
+          "id": "205532-298513",
           "label": "Up",
           "description": {
             "data": {},
@@ -4045,7 +4045,7 @@
               {
                 "data": {},
                 "marks": [],
-                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 6:55pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
+                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 7:05pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
                 "nodeType": "text"
               }
             ],
@@ -4056,19 +4056,19 @@
             "sell": {}
           },
           "status": "active",
-          "createdAt": "2026-10-11T21:46:40.423Z",
+          "createdAt": "2026-10-11T21:56:53.486Z",
           "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
           "ticker": "UP",
-          "instrumentSymbol": "GEMI-BTC05M2610112255-UP",
+          "instrumentSymbol": "GEMI-BTC05M2610112305-UP",
           "marketState": "open",
           "abbreviatedName": "Up",
           "color": "#4CAF50",
-          "expiryDate": "2026-10-11T22:55:00.000Z",
-          "effectiveDate": "2026-10-11T22:50:00.000Z",
+          "expiryDate": "2026-10-11T23:05:00.000Z",
+          "effectiveDate": "2026-10-11T23:00:00.000Z",
           "sortOrder": 0,
           "strike": {
             "type": "reference",
-            "availableAt": "2026-10-11T22:50:00.000Z"
+            "availableAt": "2026-10-11T23:00:00.000Z"
           },
           "source": "LS-LRRR-XBTUSD",
           "isCombo": false,
@@ -4079,10 +4079,10 @@
           "priceMinimum": "0.01"
         }
       ],
-      "effectiveDate": "2026-10-11T21:46:40.423Z",
+      "effectiveDate": "2026-10-11T21:56:53.486Z",
       "isLive": true,
       "participants": [],
-      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 6:55pm ET",
+      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 7:05pm ET",
       "imageUrl": "https://assets.gemini.com/predictions/images/btc_ace6c0f4-f500-4b7d-a66c-a3ea5ea1d9e9.avif",
       "series": "BTC05M",
       "volume": "0",
@@ -4090,8 +4090,8 @@
       "tags": [
         "Bitcoin"
       ],
-      "expiryDate": "2026-10-11T22:55:00.000Z",
-      "startTime": "2026-10-11T22:50:00.000Z",
+      "expiryDate": "2026-10-11T23:05:00.000Z",
+      "startTime": "2026-10-11T23:00:00.000Z",
       "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
       "subcategory": {
         "id": 222,
@@ -4382,17 +4382,17 @@
       "volumeDelta24hPct": "0"
     },
     {
-      "id": "205527",
-      "title": "BTC price today at 7pm EDT",
-      "slug": "btc-price-today-at-7pm-edt",
+      "id": "205544",
+      "title": "BTC price today at 7:10pm EDT",
+      "slug": "btc-price-today-at-710pm-edt",
       "type": "binary",
       "category": "Crypto",
-      "ticker": "BTC05M2610112300",
+      "ticker": "BTC05M2610112310",
       "status": "active",
-      "createdAt": "2026-10-11T21:50:40.043Z",
+      "createdAt": "2026-10-11T22:00:40.150Z",
       "contracts": [
         {
-          "id": "205527-298501",
+          "id": "205544-298553",
           "label": "Up",
           "description": {
             "data": {},
@@ -4400,7 +4400,7 @@
               {
                 "data": {},
                 "marks": [],
-                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 7pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
+                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 7:10pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
                 "nodeType": "text"
               }
             ],
@@ -4411,19 +4411,19 @@
             "sell": {}
           },
           "status": "active",
-          "createdAt": "2026-10-11T21:50:40.043Z",
+          "createdAt": "2026-10-11T22:00:40.150Z",
           "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
           "ticker": "UP",
-          "instrumentSymbol": "GEMI-BTC05M2610112300-UP",
+          "instrumentSymbol": "GEMI-BTC05M2610112310-UP",
           "marketState": "open",
           "abbreviatedName": "Up",
           "color": "#4CAF50",
-          "expiryDate": "2026-10-11T23:00:00.000Z",
-          "effectiveDate": "2026-10-11T22:55:00.000Z",
+          "expiryDate": "2026-10-11T23:10:00.000Z",
+          "effectiveDate": "2026-10-11T23:05:00.000Z",
           "sortOrder": 0,
           "strike": {
             "type": "reference",
-            "availableAt": "2026-10-11T22:55:00.000Z"
+            "availableAt": "2026-10-11T23:05:00.000Z"
           },
           "source": "LS-LRRR-XBTUSD",
           "isCombo": false,
@@ -4434,10 +4434,10 @@
           "priceMinimum": "0.01"
         }
       ],
-      "effectiveDate": "2026-10-11T21:50:40.043Z",
+      "effectiveDate": "2026-10-11T22:00:40.150Z",
       "isLive": true,
       "participants": [],
-      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 7pm ET",
+      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 7:10pm ET",
       "imageUrl": "https://assets.gemini.com/predictions/images/btc_ace6c0f4-f500-4b7d-a66c-a3ea5ea1d9e9.avif",
       "series": "BTC05M",
       "volume": "0",
@@ -4445,8 +4445,8 @@
       "tags": [
         "Bitcoin"
       ],
-      "expiryDate": "2026-10-11T23:00:00.000Z",
-      "startTime": "2026-10-11T22:55:00.000Z",
+      "expiryDate": "2026-10-11T23:10:00.000Z",
+      "startTime": "2026-10-11T23:05:00.000Z",
       "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
       "subcategory": {
         "id": 222,
@@ -4732,17 +4732,17 @@
       "volumeDelta24hPct": "0"
     },
     {
-      "id": "205532",
-      "title": "BTC price today at 7:05pm EDT",
-      "slug": "btc-price-today-at-705pm-edt",
+      "id": "205548",
+      "title": "BTC price today at 7:15pm EDT",
+      "slug": "btc-price-today-at-715pm-edt",
       "type": "binary",
       "category": "Crypto",
-      "ticker": "BTC05M2610112305",
+      "ticker": "BTC05M2610112315",
       "status": "active",
-      "createdAt": "2026-10-11T21:56:53.486Z",
+      "createdAt": "2026-10-11T22:06:39.963Z",
       "contracts": [
         {
-          "id": "205532-298513",
+          "id": "205548-298557",
           "label": "Up",
           "description": {
             "data": {},
@@ -4750,7 +4750,7 @@
               {
                 "data": {},
                 "marks": [],
-                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 7:05pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
+                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 7:15pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
                 "nodeType": "text"
               }
             ],
@@ -4761,19 +4761,19 @@
             "sell": {}
           },
           "status": "active",
-          "createdAt": "2026-10-11T21:56:53.486Z",
+          "createdAt": "2026-10-11T22:06:39.963Z",
           "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
           "ticker": "UP",
-          "instrumentSymbol": "GEMI-BTC05M2610112305-UP",
+          "instrumentSymbol": "GEMI-BTC05M2610112315-UP",
           "marketState": "open",
           "abbreviatedName": "Up",
           "color": "#4CAF50",
-          "expiryDate": "2026-10-11T23:05:00.000Z",
-          "effectiveDate": "2026-10-11T23:00:00.000Z",
+          "expiryDate": "2026-10-11T23:15:00.000Z",
+          "effectiveDate": "2026-10-11T23:10:00.000Z",
           "sortOrder": 0,
           "strike": {
             "type": "reference",
-            "availableAt": "2026-10-11T23:00:00.000Z"
+            "availableAt": "2026-10-11T23:10:00.000Z"
           },
           "source": "LS-LRRR-XBTUSD",
           "isCombo": false,
@@ -4784,10 +4784,10 @@
           "priceMinimum": "0.01"
         }
       ],
-      "effectiveDate": "2026-10-11T21:56:53.486Z",
+      "effectiveDate": "2026-10-11T22:06:39.963Z",
       "isLive": true,
       "participants": [],
-      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 7:05pm ET",
+      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 7:15pm ET",
       "imageUrl": "https://assets.gemini.com/predictions/images/btc_ace6c0f4-f500-4b7d-a66c-a3ea5ea1d9e9.avif",
       "series": "BTC05M",
       "volume": "0",
@@ -4795,8 +4795,8 @@
       "tags": [
         "Bitcoin"
       ],
-      "expiryDate": "2026-10-11T23:05:00.000Z",
-      "startTime": "2026-10-11T23:00:00.000Z",
+      "expiryDate": "2026-10-11T23:15:00.000Z",
+      "startTime": "2026-10-11T23:10:00.000Z",
       "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
       "subcategory": {
         "id": 222,
@@ -5128,17 +5128,17 @@
       "volumeDelta24hPct": "0"
     },
     {
-      "id": "205544",
-      "title": "BTC price today at 7:10pm EDT",
-      "slug": "btc-price-today-at-710pm-edt",
+      "id": "205552",
+      "title": "BTC price today at 7:20pm EDT",
+      "slug": "btc-price-today-at-720pm-edt",
       "type": "binary",
       "category": "Crypto",
-      "ticker": "BTC05M2610112310",
+      "ticker": "BTC05M2610112320",
       "status": "active",
-      "createdAt": "2026-10-11T22:00:40.150Z",
+      "createdAt": "2026-10-11T22:10:39.884Z",
       "contracts": [
         {
-          "id": "205544-298553",
+          "id": "205552-298561",
           "label": "Up",
           "description": {
             "data": {},
@@ -5146,7 +5146,7 @@
               {
                 "data": {},
                 "marks": [],
-                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 7:10pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
+                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 7:20pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
                 "nodeType": "text"
               }
             ],
@@ -5157,19 +5157,19 @@
             "sell": {}
           },
           "status": "active",
-          "createdAt": "2026-10-11T22:00:40.150Z",
+          "createdAt": "2026-10-11T22:10:39.884Z",
           "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
           "ticker": "UP",
-          "instrumentSymbol": "GEMI-BTC05M2610112310-UP",
+          "instrumentSymbol": "GEMI-BTC05M2610112320-UP",
           "marketState": "open",
           "abbreviatedName": "Up",
           "color": "#4CAF50",
-          "expiryDate": "2026-10-11T23:10:00.000Z",
-          "effectiveDate": "2026-10-11T23:05:00.000Z",
+          "expiryDate": "2026-10-11T23:20:00.000Z",
+          "effectiveDate": "2026-10-11T23:15:00.000Z",
           "sortOrder": 0,
           "strike": {
             "type": "reference",
-            "availableAt": "2026-10-11T23:05:00.000Z"
+            "availableAt": "2026-10-11T23:15:00.000Z"
           },
           "source": "LS-LRRR-XBTUSD",
           "isCombo": false,
@@ -5180,10 +5180,10 @@
           "priceMinimum": "0.01"
         }
       ],
-      "effectiveDate": "2026-10-11T22:00:40.150Z",
+      "effectiveDate": "2026-10-11T22:10:39.884Z",
       "isLive": true,
       "participants": [],
-      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 7:10pm ET",
+      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 7:20pm ET",
       "imageUrl": "https://assets.gemini.com/predictions/images/btc_ace6c0f4-f500-4b7d-a66c-a3ea5ea1d9e9.avif",
       "series": "BTC05M",
       "volume": "0",
@@ -5191,8 +5191,8 @@
       "tags": [
         "Bitcoin"
       ],
-      "expiryDate": "2026-10-11T23:10:00.000Z",
-      "startTime": "2026-10-11T23:05:00.000Z",
+      "expiryDate": "2026-10-11T23:20:00.000Z",
+      "startTime": "2026-10-11T23:15:00.000Z",
       "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
       "subcategory": {
         "id": 222,
@@ -5483,17 +5483,17 @@
       "volumeDelta24hPct": "0"
     },
     {
-      "id": "205548",
-      "title": "BTC price today at 7:15pm EDT",
-      "slug": "btc-price-today-at-715pm-edt",
+      "id": "205560",
+      "title": "BTC price today at 7:25pm EDT",
+      "slug": "btc-price-today-at-725pm-edt",
       "type": "binary",
       "category": "Crypto",
-      "ticker": "BTC05M2610112315",
+      "ticker": "BTC05M2610112325",
       "status": "active",
-      "createdAt": "2026-10-11T22:06:39.963Z",
+      "createdAt": "2026-10-11T22:16:39.717Z",
       "contracts": [
         {
-          "id": "205548-298557",
+          "id": "205560-298569",
           "label": "Up",
           "description": {
             "data": {},
@@ -5501,7 +5501,7 @@
               {
                 "data": {},
                 "marks": [],
-                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 7:15pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
+                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 7:25pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
                 "nodeType": "text"
               }
             ],
@@ -5512,19 +5512,19 @@
             "sell": {}
           },
           "status": "active",
-          "createdAt": "2026-10-11T22:06:39.963Z",
+          "createdAt": "2026-10-11T22:16:39.717Z",
           "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
           "ticker": "UP",
-          "instrumentSymbol": "GEMI-BTC05M2610112315-UP",
+          "instrumentSymbol": "GEMI-BTC05M2610112325-UP",
           "marketState": "open",
           "abbreviatedName": "Up",
           "color": "#4CAF50",
-          "expiryDate": "2026-10-11T23:15:00.000Z",
-          "effectiveDate": "2026-10-11T23:10:00.000Z",
+          "expiryDate": "2026-10-11T23:25:00.000Z",
+          "effectiveDate": "2026-10-11T23:20:00.000Z",
           "sortOrder": 0,
           "strike": {
             "type": "reference",
-            "availableAt": "2026-10-11T23:10:00.000Z"
+            "availableAt": "2026-10-11T23:20:00.000Z"
           },
           "source": "LS-LRRR-XBTUSD",
           "isCombo": false,
@@ -5535,10 +5535,10 @@
           "priceMinimum": "0.01"
         }
       ],
-      "effectiveDate": "2026-10-11T22:06:39.963Z",
+      "effectiveDate": "2026-10-11T22:16:39.717Z",
       "isLive": true,
       "participants": [],
-      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 7:15pm ET",
+      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 7:25pm ET",
       "imageUrl": "https://assets.gemini.com/predictions/images/btc_ace6c0f4-f500-4b7d-a66c-a3ea5ea1d9e9.avif",
       "series": "BTC05M",
       "volume": "0",
@@ -5546,8 +5546,8 @@
       "tags": [
         "Bitcoin"
       ],
-      "expiryDate": "2026-10-11T23:15:00.000Z",
-      "startTime": "2026-10-11T23:10:00.000Z",
+      "expiryDate": "2026-10-11T23:25:00.000Z",
+      "startTime": "2026-10-11T23:20:00.000Z",
       "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
       "subcategory": {
         "id": 222,
@@ -5833,17 +5833,17 @@
       "volumeDelta24hPct": "0"
     },
     {
-      "id": "205552",
-      "title": "BTC price today at 7:20pm EDT",
-      "slug": "btc-price-today-at-720pm-edt",
+      "id": "205564",
+      "title": "BTC price today at 7:30pm EDT",
+      "slug": "btc-price-today-at-730pm-edt",
       "type": "binary",
       "category": "Crypto",
-      "ticker": "BTC05M2610112320",
+      "ticker": "BTC05M2610112330",
       "status": "active",
-      "createdAt": "2026-10-11T22:10:39.884Z",
+      "createdAt": "2026-10-11T22:20:40.755Z",
       "contracts": [
         {
-          "id": "205552-298561",
+          "id": "205564-298573",
           "label": "Up",
           "description": {
             "data": {},
@@ -5851,7 +5851,7 @@
               {
                 "data": {},
                 "marks": [],
-                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 7:20pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
+                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 7:30pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
                 "nodeType": "text"
               }
             ],
@@ -5862,19 +5862,19 @@
             "sell": {}
           },
           "status": "active",
-          "createdAt": "2026-10-11T22:10:39.884Z",
+          "createdAt": "2026-10-11T22:20:40.755Z",
           "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
           "ticker": "UP",
-          "instrumentSymbol": "GEMI-BTC05M2610112320-UP",
+          "instrumentSymbol": "GEMI-BTC05M2610112330-UP",
           "marketState": "open",
           "abbreviatedName": "Up",
           "color": "#4CAF50",
-          "expiryDate": "2026-10-11T23:20:00.000Z",
-          "effectiveDate": "2026-10-11T23:15:00.000Z",
+          "expiryDate": "2026-10-11T23:30:00.000Z",
+          "effectiveDate": "2026-10-11T23:25:00.000Z",
           "sortOrder": 0,
           "strike": {
             "type": "reference",
-            "availableAt": "2026-10-11T23:15:00.000Z"
+            "availableAt": "2026-10-11T23:25:00.000Z"
           },
           "source": "LS-LRRR-XBTUSD",
           "isCombo": false,
@@ -5885,10 +5885,10 @@
           "priceMinimum": "0.01"
         }
       ],
-      "effectiveDate": "2026-10-11T22:10:39.884Z",
+      "effectiveDate": "2026-10-11T22:20:40.755Z",
       "isLive": true,
       "participants": [],
-      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 7:20pm ET",
+      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 7:30pm ET",
       "imageUrl": "https://assets.gemini.com/predictions/images/btc_ace6c0f4-f500-4b7d-a66c-a3ea5ea1d9e9.avif",
       "series": "BTC05M",
       "volume": "0",
@@ -5896,8 +5896,8 @@
       "tags": [
         "Bitcoin"
       ],
-      "expiryDate": "2026-10-11T23:20:00.000Z",
-      "startTime": "2026-10-11T23:15:00.000Z",
+      "expiryDate": "2026-10-11T23:30:00.000Z",
+      "startTime": "2026-10-11T23:25:00.000Z",
       "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
       "subcategory": {
         "id": 222,
@@ -6229,17 +6229,17 @@
       "volumeDelta24hPct": "0"
     },
     {
-      "id": "205560",
-      "title": "BTC price today at 7:25pm EDT",
-      "slug": "btc-price-today-at-725pm-edt",
+      "id": "205568",
+      "title": "BTC price today at 7:35pm EDT",
+      "slug": "btc-price-today-at-735pm-edt",
       "type": "binary",
       "category": "Crypto",
-      "ticker": "BTC05M2610112325",
+      "ticker": "BTC05M2610112335",
       "status": "active",
-      "createdAt": "2026-10-11T22:16:39.717Z",
+      "createdAt": "2026-10-11T22:26:42.049Z",
       "contracts": [
         {
-          "id": "205560-298569",
+          "id": "205568-298577",
           "label": "Up",
           "description": {
             "data": {},
@@ -6247,7 +6247,7 @@
               {
                 "data": {},
                 "marks": [],
-                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 7:25pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
+                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 7:35pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
                 "nodeType": "text"
               }
             ],
@@ -6258,19 +6258,19 @@
             "sell": {}
           },
           "status": "active",
-          "createdAt": "2026-10-11T22:16:39.717Z",
+          "createdAt": "2026-10-11T22:26:42.049Z",
           "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
           "ticker": "UP",
-          "instrumentSymbol": "GEMI-BTC05M2610112325-UP",
+          "instrumentSymbol": "GEMI-BTC05M2610112335-UP",
           "marketState": "open",
           "abbreviatedName": "Up",
           "color": "#4CAF50",
-          "expiryDate": "2026-10-11T23:25:00.000Z",
-          "effectiveDate": "2026-10-11T23:20:00.000Z",
+          "expiryDate": "2026-10-11T23:35:00.000Z",
+          "effectiveDate": "2026-10-11T23:30:00.000Z",
           "sortOrder": 0,
           "strike": {
             "type": "reference",
-            "availableAt": "2026-10-11T23:20:00.000Z"
+            "availableAt": "2026-10-11T23:30:00.000Z"
           },
           "source": "LS-LRRR-XBTUSD",
           "isCombo": false,
@@ -6281,10 +6281,10 @@
           "priceMinimum": "0.01"
         }
       ],
-      "effectiveDate": "2026-10-11T22:16:39.717Z",
+      "effectiveDate": "2026-10-11T22:26:42.049Z",
       "isLive": true,
       "participants": [],
-      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 7:25pm ET",
+      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 7:35pm ET",
       "imageUrl": "https://assets.gemini.com/predictions/images/btc_ace6c0f4-f500-4b7d-a66c-a3ea5ea1d9e9.avif",
       "series": "BTC05M",
       "volume": "0",
@@ -6292,8 +6292,8 @@
       "tags": [
         "Bitcoin"
       ],
-      "expiryDate": "2026-10-11T23:25:00.000Z",
-      "startTime": "2026-10-11T23:20:00.000Z",
+      "expiryDate": "2026-10-11T23:35:00.000Z",
+      "startTime": "2026-10-11T23:30:00.000Z",
       "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
       "subcategory": {
         "id": 222,
@@ -6585,200 +6585,6 @@
       "volumeDelta24hPct": "0"
     },
     {
-      "id": "205564",
-      "title": "BTC price today at 7:30pm EDT",
-      "slug": "btc-price-today-at-730pm-edt",
-      "type": "binary",
-      "category": "Crypto",
-      "ticker": "BTC05M2610112330",
-      "status": "active",
-      "createdAt": "2026-10-11T22:20:40.755Z",
-      "contracts": [
-        {
-          "id": "205564-298573",
-          "label": "Up",
-          "description": {
-            "data": {},
-            "content": [
-              {
-                "data": {},
-                "marks": [],
-                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 7:30pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
-                "nodeType": "text"
-              }
-            ],
-            "nodeType": "document"
-          },
-          "prices": {
-            "buy": {},
-            "sell": {}
-          },
-          "status": "active",
-          "createdAt": "2026-10-11T22:20:40.755Z",
-          "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
-          "ticker": "UP",
-          "instrumentSymbol": "GEMI-BTC05M2610112330-UP",
-          "marketState": "open",
-          "abbreviatedName": "Up",
-          "color": "#4CAF50",
-          "expiryDate": "2026-10-11T23:30:00.000Z",
-          "effectiveDate": "2026-10-11T23:25:00.000Z",
-          "sortOrder": 0,
-          "strike": {
-            "type": "reference",
-            "availableAt": "2026-10-11T23:25:00.000Z"
-          },
-          "source": "LS-LRRR-XBTUSD",
-          "isCombo": false,
-          "quantityIncrement": "0.01",
-          "quantityMinimum": "0.01",
-          "priceIncrement": "0.01",
-          "quoteAssetPrecision": 2,
-          "priceMinimum": "0.01"
-        }
-      ],
-      "effectiveDate": "2026-10-11T22:20:40.755Z",
-      "isLive": true,
-      "participants": [],
-      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 7:30pm ET",
-      "imageUrl": "https://assets.gemini.com/predictions/images/btc_ace6c0f4-f500-4b7d-a66c-a3ea5ea1d9e9.avif",
-      "series": "BTC05M",
-      "volume": "0",
-      "volume24h": "0",
-      "tags": [
-        "Bitcoin"
-      ],
-      "expiryDate": "2026-10-11T23:30:00.000Z",
-      "startTime": "2026-10-11T23:25:00.000Z",
-      "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
-      "subcategory": {
-        "id": 222,
-        "slug": "crypto_bitcoin",
-        "name": "Bitcoin",
-        "path": [
-          "Crypto",
-          "Bitcoin"
-        ]
-      },
-      "socialImageUrl": "https://assets.gemini.com/predictions/images/btc_29510bf2-83f3-4d5e-beec-2d09f473347c.png",
-      "template": "crypto-up-down",
-      "eventTags": [
-        {
-          "id": 1,
-          "name": "Five Minute",
-          "slug": "five-minute"
-        },
-        {
-          "id": 9,
-          "name": "Up Down",
-          "slug": "up-down"
-        }
-      ],
-      "source": "LS-LRRR-XBTUSD",
-      "sourceDetails": {
-        "agency": "lukka",
-        "index": "LS-LRRR-XBTUSD"
-      },
-      "volumeDelta24hPct": "0"
-    },
-    {
-      "id": "205568",
-      "title": "BTC price today at 7:35pm EDT",
-      "slug": "btc-price-today-at-735pm-edt",
-      "type": "binary",
-      "category": "Crypto",
-      "ticker": "BTC05M2610112335",
-      "status": "active",
-      "createdAt": "2026-10-11T22:26:42.049Z",
-      "contracts": [
-        {
-          "id": "205568-298577",
-          "label": "Up",
-          "description": {
-            "data": {},
-            "content": [
-              {
-                "data": {},
-                "marks": [],
-                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 7:35pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
-                "nodeType": "text"
-              }
-            ],
-            "nodeType": "document"
-          },
-          "prices": {
-            "buy": {},
-            "sell": {}
-          },
-          "status": "active",
-          "createdAt": "2026-10-11T22:26:42.049Z",
-          "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
-          "ticker": "UP",
-          "instrumentSymbol": "GEMI-BTC05M2610112335-UP",
-          "marketState": "open",
-          "abbreviatedName": "Up",
-          "color": "#4CAF50",
-          "expiryDate": "2026-10-11T23:35:00.000Z",
-          "effectiveDate": "2026-10-11T23:30:00.000Z",
-          "sortOrder": 0,
-          "strike": {
-            "type": "reference",
-            "availableAt": "2026-10-11T23:30:00.000Z"
-          },
-          "source": "LS-LRRR-XBTUSD",
-          "isCombo": false,
-          "quantityIncrement": "0.01",
-          "quantityMinimum": "0.01",
-          "priceIncrement": "0.01",
-          "quoteAssetPrecision": 2,
-          "priceMinimum": "0.01"
-        }
-      ],
-      "effectiveDate": "2026-10-11T22:26:42.049Z",
-      "isLive": true,
-      "participants": [],
-      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 7:35pm ET",
-      "imageUrl": "https://assets.gemini.com/predictions/images/btc_ace6c0f4-f500-4b7d-a66c-a3ea5ea1d9e9.avif",
-      "series": "BTC05M",
-      "volume": "0",
-      "volume24h": "0",
-      "tags": [
-        "Bitcoin"
-      ],
-      "expiryDate": "2026-10-11T23:35:00.000Z",
-      "startTime": "2026-10-11T23:30:00.000Z",
-      "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
-      "subcategory": {
-        "id": 222,
-        "slug": "crypto_bitcoin",
-        "name": "Bitcoin",
-        "path": [
-          "Crypto",
-          "Bitcoin"
-        ]
-      },
-      "socialImageUrl": "https://assets.gemini.com/predictions/images/btc_29510bf2-83f3-4d5e-beec-2d09f473347c.png",
-      "template": "crypto-up-down",
-      "eventTags": [
-        {
-          "id": 1,
-          "name": "Five Minute",
-          "slug": "five-minute"
-        },
-        {
-          "id": 9,
-          "name": "Up Down",
-          "slug": "up-down"
-        }
-      ],
-      "source": "LS-LRRR-XBTUSD",
-      "sourceDetails": {
-        "agency": "lukka",
-        "index": "LS-LRRR-XBTUSD"
-      },
-      "volumeDelta24hPct": "0"
-    },
-    {
       "id": "205576",
       "title": "BTC price today at 7:40pm EDT",
       "slug": "btc-price-today-at-740pm-edt",
@@ -6861,104 +6667,6 @@
           "id": 1,
           "name": "Five Minute",
           "slug": "five-minute"
-        },
-        {
-          "id": 9,
-          "name": "Up Down",
-          "slug": "up-down"
-        }
-      ],
-      "source": "LS-LRRR-XBTUSD",
-      "sourceDetails": {
-        "agency": "lukka",
-        "index": "LS-LRRR-XBTUSD"
-      },
-      "volumeDelta24hPct": "0"
-    },
-    {
-      "id": "205572",
-      "title": "BTC price today at 6:45pm EDT",
-      "slug": "btc-price-today-at-645pm-edt",
-      "type": "binary",
-      "category": "Crypto",
-      "ticker": "BTC15M2610112245",
-      "status": "active",
-      "createdAt": "2026-10-11T22:26:53.297Z",
-      "contracts": [
-        {
-          "id": "205572-298581",
-          "label": "Up",
-          "description": {
-            "data": {},
-            "content": [
-              {
-                "data": {},
-                "marks": [],
-                "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 6:45pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
-                "nodeType": "text"
-              }
-            ],
-            "nodeType": "document"
-          },
-          "prices": {
-            "buy": {},
-            "sell": {}
-          },
-          "status": "active",
-          "createdAt": "2026-10-11T22:26:53.297Z",
-          "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
-          "ticker": "UP",
-          "instrumentSymbol": "GEMI-BTC15M2610112245-UP",
-          "marketState": "open",
-          "abbreviatedName": "Up",
-          "color": "#4CAF50",
-          "expiryDate": "2026-10-11T22:45:00.000Z",
-          "effectiveDate": "2026-10-11T22:30:00.000Z",
-          "sortOrder": 0,
-          "strike": {
-            "type": "reference",
-            "value": "83551.8",
-            "availableAt": "2026-10-11T22:30:00.000Z"
-          },
-          "source": "LS-LRRR-XBTUSD",
-          "isCombo": false,
-          "quantityIncrement": "0.01",
-          "quantityMinimum": "0.01",
-          "priceIncrement": "0.01",
-          "quoteAssetPrecision": 2,
-          "priceMinimum": "0.01"
-        }
-      ],
-      "effectiveDate": "2026-10-11T22:26:53.297Z",
-      "isLive": true,
-      "participants": [],
-      "description": "Interval BTC price prediction event expiring on October 11, 2026 at 6:45pm ET",
-      "imageUrl": "https://assets.gemini.com/predictions/images/btc_ace6c0f4-f500-4b7d-a66c-a3ea5ea1d9e9.avif",
-      "series": "BTC15M",
-      "volume": "0",
-      "volume24h": "0",
-      "tags": [
-        "Bitcoin"
-      ],
-      "expiryDate": "2026-10-11T22:45:00.000Z",
-      "startTime": "2026-10-11T22:30:00.000Z",
-      "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
-      "subcategory": {
-        "id": 222,
-        "slug": "crypto_bitcoin",
-        "name": "Bitcoin",
-        "path": [
-          "Crypto",
-          "Bitcoin"
-        ]
-      },
-      "socialImageUrl": "https://assets.gemini.com/predictions/images/btc_29510bf2-83f3-4d5e-beec-2d09f473347c.png",
-      "template": "crypto-up-down",
-      "eventTags": [
-        {
-          "id": 2,
-          "name": "Fifteen Minute",
-          "slug": "fifteen-minute"
         },
         {
           "id": 9,
@@ -8058,200 +7766,6 @@
       "volumeDelta24hPct": "0"
     },
     {
-      "id": "205506",
-      "title": "ETH price today at 6:40pm EDT",
-      "slug": "eth-price-today-at-640pm-edt",
-      "type": "binary",
-      "category": "Crypto",
-      "ticker": "ETH05M2610112240",
-      "status": "active",
-      "createdAt": "2026-10-11T21:30:37.743Z",
-      "contracts": [
-        {
-          "id": "205506-298480",
-          "label": "Up",
-          "description": {
-            "data": {},
-            "content": [
-              {
-                "data": {},
-                "marks": [],
-                "value": "If the price of Ether (ETH) is greater than or equal to the price specified in the title on October 11, 2026 at 6:40pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-ETHUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/eth_9eb0f142-3d78-49f4-8313-23c321836e79.pdf).",
-                "nodeType": "text"
-              }
-            ],
-            "nodeType": "document"
-          },
-          "prices": {
-            "buy": {},
-            "sell": {}
-          },
-          "status": "active",
-          "createdAt": "2026-10-11T21:30:37.743Z",
-          "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/eth_9eb0f142-3d78-49f4-8313-23c321836e79.pdf",
-          "ticker": "UP",
-          "instrumentSymbol": "GEMI-ETH05M2610112240-UP",
-          "marketState": "open",
-          "abbreviatedName": "Up",
-          "color": "#4CAF50",
-          "expiryDate": "2026-10-11T22:40:00.000Z",
-          "effectiveDate": "2026-10-11T22:35:00.000Z",
-          "sortOrder": 0,
-          "strike": {
-            "type": "reference",
-            "availableAt": "2026-10-11T22:35:00.000Z"
-          },
-          "source": "LS-LRRR-ETHUSD",
-          "isCombo": false,
-          "quantityIncrement": "0.01",
-          "quantityMinimum": "0.01",
-          "priceIncrement": "0.01",
-          "quoteAssetPrecision": 2,
-          "priceMinimum": "0.01"
-        }
-      ],
-      "effectiveDate": "2026-10-11T21:30:37.743Z",
-      "isLive": true,
-      "participants": [],
-      "description": "Interval ETH price prediction event expiring on October 11, 2026 at 6:40pm ET",
-      "imageUrl": "https://assets.gemini.com/predictions/images/eth_427f68cf-9bf1-4b52-9738-6e906c1e2146.avif",
-      "series": "ETH05M",
-      "volume": "0",
-      "volume24h": "0",
-      "tags": [
-        "Ether"
-      ],
-      "expiryDate": "2026-10-11T22:40:00.000Z",
-      "startTime": "2026-10-11T22:35:00.000Z",
-      "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/eth_9eb0f142-3d78-49f4-8313-23c321836e79.pdf",
-      "subcategory": {
-        "id": 223,
-        "slug": "crypto_ether",
-        "name": "Ether",
-        "path": [
-          "Crypto",
-          "Ether"
-        ]
-      },
-      "socialImageUrl": "https://assets.gemini.com/predictions/images/eth_ad2adf62-6fe8-4b44-9191-0f6ac0124f9c.png",
-      "template": "crypto-up-down",
-      "eventTags": [
-        {
-          "id": 1,
-          "name": "Five Minute",
-          "slug": "five-minute"
-        },
-        {
-          "id": 9,
-          "name": "Up Down",
-          "slug": "up-down"
-        }
-      ],
-      "source": "LS-LRRR-ETHUSD",
-      "sourceDetails": {
-        "agency": "lukka",
-        "index": "LS-LRRR-ETHUSD"
-      },
-      "volumeDelta24hPct": "0"
-    },
-    {
-      "id": "205510",
-      "title": "ETH price today at 6:45pm EDT",
-      "slug": "eth-price-today-at-645pm-edt",
-      "type": "binary",
-      "category": "Crypto",
-      "ticker": "ETH05M2610112245",
-      "status": "active",
-      "createdAt": "2026-10-11T21:36:38.528Z",
-      "contracts": [
-        {
-          "id": "205510-298484",
-          "label": "Up",
-          "description": {
-            "data": {},
-            "content": [
-              {
-                "data": {},
-                "marks": [],
-                "value": "If the price of Ether (ETH) is greater than or equal to the price specified in the title on October 11, 2026 at 6:45pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-ETHUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/eth_9eb0f142-3d78-49f4-8313-23c321836e79.pdf).",
-                "nodeType": "text"
-              }
-            ],
-            "nodeType": "document"
-          },
-          "prices": {
-            "buy": {},
-            "sell": {}
-          },
-          "status": "active",
-          "createdAt": "2026-10-11T21:36:38.528Z",
-          "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/eth_9eb0f142-3d78-49f4-8313-23c321836e79.pdf",
-          "ticker": "UP",
-          "instrumentSymbol": "GEMI-ETH05M2610112245-UP",
-          "marketState": "open",
-          "abbreviatedName": "Up",
-          "color": "#4CAF50",
-          "expiryDate": "2026-10-11T22:45:00.000Z",
-          "effectiveDate": "2026-10-11T22:40:00.000Z",
-          "sortOrder": 0,
-          "strike": {
-            "type": "reference",
-            "availableAt": "2026-10-11T22:40:00.000Z"
-          },
-          "source": "LS-LRRR-ETHUSD",
-          "isCombo": false,
-          "quantityIncrement": "0.01",
-          "quantityMinimum": "0.01",
-          "priceIncrement": "0.01",
-          "quoteAssetPrecision": 2,
-          "priceMinimum": "0.01"
-        }
-      ],
-      "effectiveDate": "2026-10-11T21:36:38.528Z",
-      "isLive": true,
-      "participants": [],
-      "description": "Interval ETH price prediction event expiring on October 11, 2026 at 6:45pm ET",
-      "imageUrl": "https://assets.gemini.com/predictions/images/eth_427f68cf-9bf1-4b52-9738-6e906c1e2146.avif",
-      "series": "ETH05M",
-      "volume": "0",
-      "volume24h": "0",
-      "tags": [
-        "Ether"
-      ],
-      "expiryDate": "2026-10-11T22:45:00.000Z",
-      "startTime": "2026-10-11T22:40:00.000Z",
-      "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/eth_9eb0f142-3d78-49f4-8313-23c321836e79.pdf",
-      "subcategory": {
-        "id": 223,
-        "slug": "crypto_ether",
-        "name": "Ether",
-        "path": [
-          "Crypto",
-          "Ether"
-        ]
-      },
-      "socialImageUrl": "https://assets.gemini.com/predictions/images/eth_ad2adf62-6fe8-4b44-9191-0f6ac0124f9c.png",
-      "template": "crypto-up-down",
-      "eventTags": [
-        {
-          "id": 1,
-          "name": "Five Minute",
-          "slug": "five-minute"
-        },
-        {
-          "id": 9,
-          "name": "Up Down",
-          "slug": "up-down"
-        }
-      ],
-      "source": "LS-LRRR-ETHUSD",
-      "sourceDetails": {
-        "agency": "lukka",
-        "index": "LS-LRRR-ETHUSD"
-      },
-      "volumeDelta24hPct": "0"
-    },
-    {
       "id": "205514",
       "title": "ETH price today at 6:50pm EDT",
       "slug": "eth-price-today-at-650pm-edt",
@@ -9304,104 +8818,6 @@
           "id": 1,
           "name": "Five Minute",
           "slug": "five-minute"
-        },
-        {
-          "id": 9,
-          "name": "Up Down",
-          "slug": "up-down"
-        }
-      ],
-      "source": "LS-LRRR-ETHUSD",
-      "sourceDetails": {
-        "agency": "lukka",
-        "index": "LS-LRRR-ETHUSD"
-      },
-      "volumeDelta24hPct": "0"
-    },
-    {
-      "id": "205571",
-      "title": "ETH price today at 6:45pm EDT",
-      "slug": "eth-price-today-at-645pm-edt",
-      "type": "binary",
-      "category": "Crypto",
-      "ticker": "ETH15M2610112245",
-      "status": "active",
-      "createdAt": "2026-10-11T22:26:49.876Z",
-      "contracts": [
-        {
-          "id": "205571-298580",
-          "label": "Up",
-          "description": {
-            "data": {},
-            "content": [
-              {
-                "data": {},
-                "marks": [],
-                "value": "If the price of Ether (ETH) is greater than or equal to the price specified in the title on October 11, 2026 at 6:45pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-ETHUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/eth_9eb0f142-3d78-49f4-8313-23c321836e79.pdf).",
-                "nodeType": "text"
-              }
-            ],
-            "nodeType": "document"
-          },
-          "prices": {
-            "buy": {},
-            "sell": {}
-          },
-          "status": "active",
-          "createdAt": "2026-10-11T22:26:49.876Z",
-          "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/eth_9eb0f142-3d78-49f4-8313-23c321836e79.pdf",
-          "ticker": "UP",
-          "instrumentSymbol": "GEMI-ETH15M2610112245-UP",
-          "marketState": "open",
-          "abbreviatedName": "Up",
-          "color": "#4CAF50",
-          "expiryDate": "2026-10-11T22:45:00.000Z",
-          "effectiveDate": "2026-10-11T22:30:00.000Z",
-          "sortOrder": 0,
-          "strike": {
-            "type": "reference",
-            "value": "2531.36",
-            "availableAt": "2026-10-11T22:30:00.000Z"
-          },
-          "source": "LS-LRRR-ETHUSD",
-          "isCombo": false,
-          "quantityIncrement": "0.01",
-          "quantityMinimum": "0.01",
-          "priceIncrement": "0.01",
-          "quoteAssetPrecision": 2,
-          "priceMinimum": "0.01"
-        }
-      ],
-      "effectiveDate": "2026-10-11T22:26:49.876Z",
-      "isLive": true,
-      "participants": [],
-      "description": "Interval ETH price prediction event expiring on October 11, 2026 at 6:45pm ET",
-      "imageUrl": "https://assets.gemini.com/predictions/images/eth_427f68cf-9bf1-4b52-9738-6e906c1e2146.avif",
-      "series": "ETH15M",
-      "volume": "0",
-      "volume24h": "0",
-      "tags": [
-        "Ether"
-      ],
-      "expiryDate": "2026-10-11T22:45:00.000Z",
-      "startTime": "2026-10-11T22:30:00.000Z",
-      "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/eth_9eb0f142-3d78-49f4-8313-23c321836e79.pdf",
-      "subcategory": {
-        "id": 223,
-        "slug": "crypto_ether",
-        "name": "Ether",
-        "path": [
-          "Crypto",
-          "Ether"
-        ]
-      },
-      "socialImageUrl": "https://assets.gemini.com/predictions/images/eth_ad2adf62-6fe8-4b44-9191-0f6ac0124f9c.png",
-      "template": "crypto-up-down",
-      "eventTags": [
-        {
-          "id": 2,
-          "name": "Fifteen Minute",
-          "slug": "fifteen-minute"
         },
         {
           "id": 9,
@@ -10976,200 +10392,6 @@
       "volumeDelta24hPct": "0"
     },
     {
-      "id": "205505",
-      "title": "SOL price today at 6:40pm EDT",
-      "slug": "sol-price-today-at-640pm-edt",
-      "type": "binary",
-      "category": "Crypto",
-      "ticker": "SOL05M2610112240",
-      "status": "active",
-      "createdAt": "2026-10-11T21:30:31.870Z",
-      "contracts": [
-        {
-          "id": "205505-298479",
-          "label": "Up",
-          "description": {
-            "data": {},
-            "content": [
-              {
-                "data": {},
-                "marks": [],
-                "value": "If the price of Solana (SOL) is greater than or equal to the price specified in the title on October 11, 2026 at 6:40pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-SOLNUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/sol_9cceb1a1-4177-401a-82dc-097ad2676bc2.pdf).",
-                "nodeType": "text"
-              }
-            ],
-            "nodeType": "document"
-          },
-          "prices": {
-            "buy": {},
-            "sell": {}
-          },
-          "status": "active",
-          "createdAt": "2026-10-11T21:30:31.870Z",
-          "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/sol_9cceb1a1-4177-401a-82dc-097ad2676bc2.pdf",
-          "ticker": "UP",
-          "instrumentSymbol": "GEMI-SOL05M2610112240-UP",
-          "marketState": "open",
-          "abbreviatedName": "Up",
-          "color": "#4CAF50",
-          "expiryDate": "2026-10-11T22:40:00.000Z",
-          "effectiveDate": "2026-10-11T22:35:00.000Z",
-          "sortOrder": 0,
-          "strike": {
-            "type": "reference",
-            "availableAt": "2026-10-11T22:35:00.000Z"
-          },
-          "source": "LS-LRRR-SOLNUSD",
-          "isCombo": false,
-          "quantityIncrement": "0.01",
-          "quantityMinimum": "0.01",
-          "priceIncrement": "0.01",
-          "quoteAssetPrecision": 2,
-          "priceMinimum": "0.01"
-        }
-      ],
-      "effectiveDate": "2026-10-11T21:30:31.870Z",
-      "isLive": true,
-      "participants": [],
-      "description": "Interval SOL price prediction event expiring on October 11, 2026 at 6:40pm ET",
-      "imageUrl": "https://assets.gemini.com/predictions/images/sol_0e1cf18e-eff3-4570-a348-210cd5434e8f.avif",
-      "series": "SOL05M",
-      "volume": "0",
-      "volume24h": "0",
-      "tags": [
-        "Solana"
-      ],
-      "expiryDate": "2026-10-11T22:40:00.000Z",
-      "startTime": "2026-10-11T22:35:00.000Z",
-      "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/sol_9cceb1a1-4177-401a-82dc-097ad2676bc2.pdf",
-      "subcategory": {
-        "id": 225,
-        "slug": "crypto_solana",
-        "name": "Solana",
-        "path": [
-          "Crypto",
-          "Solana"
-        ]
-      },
-      "socialImageUrl": "https://assets.gemini.com/predictions/images/sol_9af62db6-2bf3-49e8-b401-4e7e93eeb520.png",
-      "template": "crypto-up-down",
-      "eventTags": [
-        {
-          "id": 1,
-          "name": "Five Minute",
-          "slug": "five-minute"
-        },
-        {
-          "id": 9,
-          "name": "Up Down",
-          "slug": "up-down"
-        }
-      ],
-      "source": "LS-LRRR-SOLNUSD",
-      "sourceDetails": {
-        "agency": "lukka",
-        "index": "LS-LRRR-SOLNUSD"
-      },
-      "volumeDelta24hPct": "0"
-    },
-    {
-      "id": "205509",
-      "title": "SOL price today at 6:45pm EDT",
-      "slug": "sol-price-today-at-645pm-edt",
-      "type": "binary",
-      "category": "Crypto",
-      "ticker": "SOL05M2610112245",
-      "status": "active",
-      "createdAt": "2026-10-11T21:36:32.171Z",
-      "contracts": [
-        {
-          "id": "205509-298483",
-          "label": "Up",
-          "description": {
-            "data": {},
-            "content": [
-              {
-                "data": {},
-                "marks": [],
-                "value": "If the price of Solana (SOL) is greater than or equal to the price specified in the title on October 11, 2026 at 6:45pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-SOLNUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/sol_9cceb1a1-4177-401a-82dc-097ad2676bc2.pdf).",
-                "nodeType": "text"
-              }
-            ],
-            "nodeType": "document"
-          },
-          "prices": {
-            "buy": {},
-            "sell": {}
-          },
-          "status": "active",
-          "createdAt": "2026-10-11T21:36:32.171Z",
-          "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/sol_9cceb1a1-4177-401a-82dc-097ad2676bc2.pdf",
-          "ticker": "UP",
-          "instrumentSymbol": "GEMI-SOL05M2610112245-UP",
-          "marketState": "open",
-          "abbreviatedName": "Up",
-          "color": "#4CAF50",
-          "expiryDate": "2026-10-11T22:45:00.000Z",
-          "effectiveDate": "2026-10-11T22:40:00.000Z",
-          "sortOrder": 0,
-          "strike": {
-            "type": "reference",
-            "availableAt": "2026-10-11T22:40:00.000Z"
-          },
-          "source": "LS-LRRR-SOLNUSD",
-          "isCombo": false,
-          "quantityIncrement": "0.01",
-          "quantityMinimum": "0.01",
-          "priceIncrement": "0.01",
-          "quoteAssetPrecision": 2,
-          "priceMinimum": "0.01"
-        }
-      ],
-      "effectiveDate": "2026-10-11T21:36:32.171Z",
-      "isLive": true,
-      "participants": [],
-      "description": "Interval SOL price prediction event expiring on October 11, 2026 at 6:45pm ET",
-      "imageUrl": "https://assets.gemini.com/predictions/images/sol_0e1cf18e-eff3-4570-a348-210cd5434e8f.avif",
-      "series": "SOL05M",
-      "volume": "0",
-      "volume24h": "0",
-      "tags": [
-        "Solana"
-      ],
-      "expiryDate": "2026-10-11T22:45:00.000Z",
-      "startTime": "2026-10-11T22:40:00.000Z",
-      "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/sol_9cceb1a1-4177-401a-82dc-097ad2676bc2.pdf",
-      "subcategory": {
-        "id": 225,
-        "slug": "crypto_solana",
-        "name": "Solana",
-        "path": [
-          "Crypto",
-          "Solana"
-        ]
-      },
-      "socialImageUrl": "https://assets.gemini.com/predictions/images/sol_9af62db6-2bf3-49e8-b401-4e7e93eeb520.png",
-      "template": "crypto-up-down",
-      "eventTags": [
-        {
-          "id": 1,
-          "name": "Five Minute",
-          "slug": "five-minute"
-        },
-        {
-          "id": 9,
-          "name": "Up Down",
-          "slug": "up-down"
-        }
-      ],
-      "source": "LS-LRRR-SOLNUSD",
-      "sourceDetails": {
-        "agency": "lukka",
-        "index": "LS-LRRR-SOLNUSD"
-      },
-      "volumeDelta24hPct": "0"
-    },
-    {
       "id": "205513",
       "title": "SOL price today at 6:50pm EDT",
       "slug": "sol-price-today-at-650pm-edt",
@@ -12222,104 +11444,6 @@
           "id": 1,
           "name": "Five Minute",
           "slug": "five-minute"
-        },
-        {
-          "id": 9,
-          "name": "Up Down",
-          "slug": "up-down"
-        }
-      ],
-      "source": "LS-LRRR-SOLNUSD",
-      "sourceDetails": {
-        "agency": "lukka",
-        "index": "LS-LRRR-SOLNUSD"
-      },
-      "volumeDelta24hPct": "0"
-    },
-    {
-      "id": "205570",
-      "title": "SOL price today at 6:45pm EDT",
-      "slug": "sol-price-today-at-645pm-edt",
-      "type": "binary",
-      "category": "Crypto",
-      "ticker": "SOL15M2610112245",
-      "status": "active",
-      "createdAt": "2026-10-11T22:26:47.523Z",
-      "contracts": [
-        {
-          "id": "205570-298579",
-          "label": "Up",
-          "description": {
-            "data": {},
-            "content": [
-              {
-                "data": {},
-                "marks": [],
-                "value": "If the price of Solana (SOL) is greater than or equal to the price specified in the title on October 11, 2026 at 6:45pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-SOLNUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/sol_9cceb1a1-4177-401a-82dc-097ad2676bc2.pdf).",
-                "nodeType": "text"
-              }
-            ],
-            "nodeType": "document"
-          },
-          "prices": {
-            "buy": {},
-            "sell": {}
-          },
-          "status": "active",
-          "createdAt": "2026-10-11T22:26:47.523Z",
-          "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/sol_9cceb1a1-4177-401a-82dc-097ad2676bc2.pdf",
-          "ticker": "UP",
-          "instrumentSymbol": "GEMI-SOL15M2610112245-UP",
-          "marketState": "open",
-          "abbreviatedName": "Up",
-          "color": "#4CAF50",
-          "expiryDate": "2026-10-11T22:45:00.000Z",
-          "effectiveDate": "2026-10-11T22:30:00.000Z",
-          "sortOrder": 0,
-          "strike": {
-            "type": "reference",
-            "value": "111.03611756166667",
-            "availableAt": "2026-10-11T22:30:00.000Z"
-          },
-          "source": "LS-LRRR-SOLNUSD",
-          "isCombo": false,
-          "quantityIncrement": "0.01",
-          "quantityMinimum": "0.01",
-          "priceIncrement": "0.01",
-          "quoteAssetPrecision": 2,
-          "priceMinimum": "0.01"
-        }
-      ],
-      "effectiveDate": "2026-10-11T22:26:47.523Z",
-      "isLive": true,
-      "participants": [],
-      "description": "Interval SOL price prediction event expiring on October 11, 2026 at 6:45pm ET",
-      "imageUrl": "https://assets.gemini.com/predictions/images/sol_0e1cf18e-eff3-4570-a348-210cd5434e8f.avif",
-      "series": "SOL15M",
-      "volume": "0",
-      "volume24h": "0",
-      "tags": [
-        "Solana"
-      ],
-      "expiryDate": "2026-10-11T22:45:00.000Z",
-      "startTime": "2026-10-11T22:30:00.000Z",
-      "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/sol_9cceb1a1-4177-401a-82dc-097ad2676bc2.pdf",
-      "subcategory": {
-        "id": 225,
-        "slug": "crypto_solana",
-        "name": "Solana",
-        "path": [
-          "Crypto",
-          "Solana"
-        ]
-      },
-      "socialImageUrl": "https://assets.gemini.com/predictions/images/sol_9af62db6-2bf3-49e8-b401-4e7e93eeb520.png",
-      "template": "crypto-up-down",
-      "eventTags": [
-        {
-          "id": 2,
-          "name": "Fifteen Minute",
-          "slug": "fifteen-minute"
         },
         {
           "id": 9,
@@ -14626,200 +13750,6 @@
       "volumeDelta24hPct": "0"
     },
     {
-      "id": "205504",
-      "title": "XRP price today at 6:40pm EDT",
-      "slug": "xrp-price-today-at-640pm-edt",
-      "type": "binary",
-      "category": "Crypto",
-      "ticker": "XRP05M2610112240",
-      "status": "active",
-      "createdAt": "2026-10-11T21:30:26.446Z",
-      "contracts": [
-        {
-          "id": "205504-298478",
-          "label": "Up",
-          "description": {
-            "data": {},
-            "content": [
-              {
-                "data": {},
-                "marks": [],
-                "value": "If the price of XRP is greater than or equal to the price specified in the title on October 11, 2026 at 6:40pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XRPUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/xrp_68683757-6484-4a53-8a7f-7d9afc5b1747.pdf).",
-                "nodeType": "text"
-              }
-            ],
-            "nodeType": "document"
-          },
-          "prices": {
-            "buy": {},
-            "sell": {}
-          },
-          "status": "active",
-          "createdAt": "2026-10-11T21:30:26.446Z",
-          "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/xrp_68683757-6484-4a53-8a7f-7d9afc5b1747.pdf",
-          "ticker": "UP",
-          "instrumentSymbol": "GEMI-XRP05M2610112240-UP",
-          "marketState": "open",
-          "abbreviatedName": "Up",
-          "color": "#4CAF50",
-          "expiryDate": "2026-10-11T22:40:00.000Z",
-          "effectiveDate": "2026-10-11T22:35:00.000Z",
-          "sortOrder": 0,
-          "strike": {
-            "type": "reference",
-            "availableAt": "2026-10-11T22:35:00.000Z"
-          },
-          "source": "LS-LRRR-XRPUSD",
-          "isCombo": false,
-          "quantityIncrement": "0.01",
-          "quantityMinimum": "0.01",
-          "priceIncrement": "0.01",
-          "quoteAssetPrecision": 2,
-          "priceMinimum": "0.01"
-        }
-      ],
-      "effectiveDate": "2026-10-11T21:30:26.446Z",
-      "isLive": true,
-      "participants": [],
-      "description": "Interval XRP price prediction event expiring on October 11, 2026 at 6:40pm ET",
-      "imageUrl": "https://assets.gemini.com/predictions/images/xrp_df628348-77d6-4859-bbd6-fdf14bb8b482.avif",
-      "series": "XRP05M",
-      "volume": "0",
-      "volume24h": "0",
-      "tags": [
-        "XRP"
-      ],
-      "expiryDate": "2026-10-11T22:40:00.000Z",
-      "startTime": "2026-10-11T22:35:00.000Z",
-      "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/xrp_68683757-6484-4a53-8a7f-7d9afc5b1747.pdf",
-      "subcategory": {
-        "id": 224,
-        "slug": "crypto_xrp",
-        "name": "XRP",
-        "path": [
-          "Crypto",
-          "XRP"
-        ]
-      },
-      "socialImageUrl": "https://assets.gemini.com/predictions/images/xrp_43a62a7f-d135-4b0c-83ec-8b0e59109f6f.png",
-      "template": "crypto-up-down",
-      "eventTags": [
-        {
-          "id": 1,
-          "name": "Five Minute",
-          "slug": "five-minute"
-        },
-        {
-          "id": 9,
-          "name": "Up Down",
-          "slug": "up-down"
-        }
-      ],
-      "source": "LS-LRRR-XRPUSD",
-      "sourceDetails": {
-        "agency": "lukka",
-        "index": "LS-LRRR-XRPUSD"
-      },
-      "volumeDelta24hPct": "0"
-    },
-    {
-      "id": "205508",
-      "title": "XRP price today at 6:45pm EDT",
-      "slug": "xrp-price-today-at-645pm-edt",
-      "type": "binary",
-      "category": "Crypto",
-      "ticker": "XRP05M2610112245",
-      "status": "active",
-      "createdAt": "2026-10-11T21:36:26.537Z",
-      "contracts": [
-        {
-          "id": "205508-298482",
-          "label": "Up",
-          "description": {
-            "data": {},
-            "content": [
-              {
-                "data": {},
-                "marks": [],
-                "value": "If the price of XRP is greater than or equal to the price specified in the title on October 11, 2026 at 6:45pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XRPUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/xrp_68683757-6484-4a53-8a7f-7d9afc5b1747.pdf).",
-                "nodeType": "text"
-              }
-            ],
-            "nodeType": "document"
-          },
-          "prices": {
-            "buy": {},
-            "sell": {}
-          },
-          "status": "active",
-          "createdAt": "2026-10-11T21:36:26.537Z",
-          "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/xrp_68683757-6484-4a53-8a7f-7d9afc5b1747.pdf",
-          "ticker": "UP",
-          "instrumentSymbol": "GEMI-XRP05M2610112245-UP",
-          "marketState": "open",
-          "abbreviatedName": "Up",
-          "color": "#4CAF50",
-          "expiryDate": "2026-10-11T22:45:00.000Z",
-          "effectiveDate": "2026-10-11T22:40:00.000Z",
-          "sortOrder": 0,
-          "strike": {
-            "type": "reference",
-            "availableAt": "2026-10-11T22:40:00.000Z"
-          },
-          "source": "LS-LRRR-XRPUSD",
-          "isCombo": false,
-          "quantityIncrement": "0.01",
-          "quantityMinimum": "0.01",
-          "priceIncrement": "0.01",
-          "quoteAssetPrecision": 2,
-          "priceMinimum": "0.01"
-        }
-      ],
-      "effectiveDate": "2026-10-11T21:36:26.537Z",
-      "isLive": true,
-      "participants": [],
-      "description": "Interval XRP price prediction event expiring on October 11, 2026 at 6:45pm ET",
-      "imageUrl": "https://assets.gemini.com/predictions/images/xrp_df628348-77d6-4859-bbd6-fdf14bb8b482.avif",
-      "series": "XRP05M",
-      "volume": "0",
-      "volume24h": "0",
-      "tags": [
-        "XRP"
-      ],
-      "expiryDate": "2026-10-11T22:45:00.000Z",
-      "startTime": "2026-10-11T22:40:00.000Z",
-      "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/xrp_68683757-6484-4a53-8a7f-7d9afc5b1747.pdf",
-      "subcategory": {
-        "id": 224,
-        "slug": "crypto_xrp",
-        "name": "XRP",
-        "path": [
-          "Crypto",
-          "XRP"
-        ]
-      },
-      "socialImageUrl": "https://assets.gemini.com/predictions/images/xrp_43a62a7f-d135-4b0c-83ec-8b0e59109f6f.png",
-      "template": "crypto-up-down",
-      "eventTags": [
-        {
-          "id": 1,
-          "name": "Five Minute",
-          "slug": "five-minute"
-        },
-        {
-          "id": 9,
-          "name": "Up Down",
-          "slug": "up-down"
-        }
-      ],
-      "source": "LS-LRRR-XRPUSD",
-      "sourceDetails": {
-        "agency": "lukka",
-        "index": "LS-LRRR-XRPUSD"
-      },
-      "volumeDelta24hPct": "0"
-    },
-    {
       "id": "205512",
       "title": "XRP price today at 6:50pm EDT",
       "slug": "xrp-price-today-at-650pm-edt",
@@ -15872,104 +14802,6 @@
           "id": 1,
           "name": "Five Minute",
           "slug": "five-minute"
-        },
-        {
-          "id": 9,
-          "name": "Up Down",
-          "slug": "up-down"
-        }
-      ],
-      "source": "LS-LRRR-XRPUSD",
-      "sourceDetails": {
-        "agency": "lukka",
-        "index": "LS-LRRR-XRPUSD"
-      },
-      "volumeDelta24hPct": "0"
-    },
-    {
-      "id": "205569",
-      "title": "XRP price today at 6:45pm EDT",
-      "slug": "xrp-price-today-at-645pm-edt",
-      "type": "binary",
-      "category": "Crypto",
-      "ticker": "XRP15M2610112245",
-      "status": "active",
-      "createdAt": "2026-10-11T22:26:44.433Z",
-      "contracts": [
-        {
-          "id": "205569-298578",
-          "label": "Up",
-          "description": {
-            "data": {},
-            "content": [
-              {
-                "data": {},
-                "marks": [],
-                "value": "If the price of XRP is greater than or equal to the price specified in the title on October 11, 2026 at 6:45pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XRPUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/xrp_68683757-6484-4a53-8a7f-7d9afc5b1747.pdf).",
-                "nodeType": "text"
-              }
-            ],
-            "nodeType": "document"
-          },
-          "prices": {
-            "buy": {},
-            "sell": {}
-          },
-          "status": "active",
-          "createdAt": "2026-10-11T22:26:44.433Z",
-          "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/xrp_68683757-6484-4a53-8a7f-7d9afc5b1747.pdf",
-          "ticker": "UP",
-          "instrumentSymbol": "GEMI-XRP15M2610112245-UP",
-          "marketState": "open",
-          "abbreviatedName": "Up",
-          "color": "#4CAF50",
-          "expiryDate": "2026-10-11T22:45:00.000Z",
-          "effectiveDate": "2026-10-11T22:30:00.000Z",
-          "sortOrder": 0,
-          "strike": {
-            "type": "reference",
-            "value": "1.4078623523166667",
-            "availableAt": "2026-10-11T22:30:00.000Z"
-          },
-          "source": "LS-LRRR-XRPUSD",
-          "isCombo": false,
-          "quantityIncrement": "0.01",
-          "quantityMinimum": "0.01",
-          "priceIncrement": "0.01",
-          "quoteAssetPrecision": 2,
-          "priceMinimum": "0.01"
-        }
-      ],
-      "effectiveDate": "2026-10-11T22:26:44.433Z",
-      "isLive": true,
-      "participants": [],
-      "description": "Interval XRP price prediction event expiring on October 11, 2026 at 6:45pm ET",
-      "imageUrl": "https://assets.gemini.com/predictions/images/xrp_df628348-77d6-4859-bbd6-fdf14bb8b482.avif",
-      "series": "XRP15M",
-      "volume": "0",
-      "volume24h": "0",
-      "tags": [
-        "XRP"
-      ],
-      "expiryDate": "2026-10-11T22:45:00.000Z",
-      "startTime": "2026-10-11T22:30:00.000Z",
-      "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/xrp_68683757-6484-4a53-8a7f-7d9afc5b1747.pdf",
-      "subcategory": {
-        "id": 224,
-        "slug": "crypto_xrp",
-        "name": "XRP",
-        "path": [
-          "Crypto",
-          "XRP"
-        ]
-      },
-      "socialImageUrl": "https://assets.gemini.com/predictions/images/xrp_43a62a7f-d135-4b0c-83ec-8b0e59109f6f.png",
-      "template": "crypto-up-down",
-      "eventTags": [
-        {
-          "id": 2,
-          "name": "Fifteen Minute",
-          "slug": "fifteen-minute"
         },
         {
           "id": 9,
@@ -18077,6 +16909,6 @@
   "pagination": {
     "limit": 200,
     "offset": 0,
-    "total": 94
+    "total": 82
   }
 }

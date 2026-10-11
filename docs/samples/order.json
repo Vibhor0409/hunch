@@ -1,0 +1,40 @@
+{
+  "placedAt": "2026-10-11T22:49:07.560Z",
+  "eventTicker": "BTC2610112300",
+  "workedWithQuantity": "7.14",
+  "attempts": [
+    {
+      "quantity": "7.14",
+      "ok": true,
+      "request": {
+        "symbol": "GEMI-BTC2610112300-HI83100",
+        "orderType": "limit",
+        "side": "buy",
+        "quantity": "7.14",
+        "price": "0.14",
+        "outcome": "yes",
+        "timeInForce": "immediate-or-cancel",
+        "makerOrCancel": false
+      },
+      "response": {
+        "orderId": "145853902277584029",
+        "hashOrderId": "A7zB16Ox3WXP",
+        "clientOrderId": "1adc0009-312f-46bf-bb62-bdcad3ba76a3",
+        "globalOrderId": "0e4d6c3f5173156c62385b1a2462cbca2f90dc3a73b24de4db924fe7832f3b7c",
+        "status": "cancelled",
+        "symbol": "GEMI-BTC2610112300-HI83100",
+        "side": "buy",
+        "outcome": "yes",
+        "orderType": "limit",
+        "timeInForce": "immediate-or-cancel",
+        "quantity": "7.14",
+        "filledQuantity": "0",
+        "remainingQuantity": "7.14",
+        "price": "0.14",
+        "createdAt": "2026-10-11T22:49:07.524Z",
+        "updatedAt": "2026-10-11T22:49:07.524Z",
+        "cancelledAt": "2026-10-11T22:49:07.522Z"
+      }
+    }
+  ]
+}

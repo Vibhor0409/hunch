@@ -173,7 +173,7 @@ async function main(): Promise<void> {
 
   const client = await sdk.createClient({
     env: "sandbox",
-    auth: new sdk.HmacAuth({ apiKey, apiSecret }),
+    auth: new sdk.HmacAuth({ nonceMode: "time-based", apiKey, apiSecret }),
     skipWsInit: true,
   });
 

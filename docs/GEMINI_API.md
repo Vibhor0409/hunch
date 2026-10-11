@@ -15,6 +15,7 @@ const client = await createClient({
   auth: new HmacAuth({
     apiKey: process.env.GEMINI_API_KEY!,
     apiSecret: process.env.GEMINI_API_SECRET!,
+    nonceMode: "time-based", // the sandbox rejects the default monotonic nonce with InvalidNonce (verified 3:47 PM)
   }),
   skipWsInit: true, // REST only; we do not use WebSockets
 });
