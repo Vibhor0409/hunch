@@ -13,7 +13,7 @@ Local API address for the app: http://10.43.243.182:3000
 | 1 foundation | 2:00 to 2:15 | typechecks, build, expo-doctor, db probe | passed (db probe passed 3:08 PM) | 2:19 PM |
 | 2 parallel build | 2:15 to 2:45 | smoke script with samples, unknowns answered, tests | started 2:19 PM: game-engine, ui-designer, video-producer; gemini-integrator and data-architect wait for keys | |
 | 3 integration and launch | 2:45 to 3:05 | API tests on production, phone scan, real order id | API live at https://hunch-api.vercel.app; Expo Go update published; awaiting phone scan | 3:39 PM |
-| 4 levels and profile | 3:05 to 3:45 | tests on production, Me tab real stats | | |
+| 4 levels and profile | 3:05 to 3:45 | tests on production, Me tab real stats | UI published; API tests 11/11 on production; awaiting phone check | 3:50 PM |
 | 5 video and submission | 3:45 to 4:45 | video under 1:55, README, public repo | | |
 
 Build started 2:12 PM, about 22 minutes behind the 1:50 PM start the targets assume. Shift every target by 22 minutes; the 5:00 PM deadline is fixed.
@@ -54,3 +54,4 @@ Build started 2:12 PM, about 22 minutes behind the 1:50 PM start the targets ass
 - 3:41 PM EAS Update published: branch preview, runtime exposdk:57.0.0, update group e6f98dbf-8809-4ec9-9fde-b4b248f03e90. Gate 3 waits for the human phone scan. release.sh fixed (--environment preview --platform ios). EXPO_PUBLIC_API_URL also set in the EAS preview environment.
 - 3:47 PM ui-designer Phase 4 DONE: LevelBar, CategoryBars, insight on Me; Context button and card back on the Deck (btn-context, card-back, btn-context-back). Verified: typecheck, expo-doctor 21/21, export OK. release-engineer README DONE at README.md. video-producer: blind scene voiceover with Context line, SHOTLIST updated, end-card mark matches the app; video agent stopped on the human's request after these edits.
 - 3:49 PM Sandbox key works with HmacAuth nonceMode time-based (monotonic gives InvalidNonce). Test order placed: id 145853902277584029, quantity 7.14 at 0.14 accepted (fractions WORK), IOC cancelled with no fill. placeOrder returns filledQuantity, remainingQuantity, avgExecutionPrice. Key updated in Vercel; API redeployed to https://hunch-api.vercel.app.
+- 3:50 PM Phase 4 Expo Go update published (same QR). Production API test 11/11 with the live sandbox key.
