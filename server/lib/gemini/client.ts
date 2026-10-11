@@ -1,8 +1,9 @@
 // Gemini SDK clients for Hunch (server only).
 // One authenticated sandbox client places orders. Public reads (feed, quotes,
-// settlement) use unauthenticated clients so they keep working even when the
-// trading key is missing or rejected. The SDK is ESM-only and the scripts run
-// under tsx as CommonJS, so the package is loaded with a dynamic import.
+// settlement) use unauthenticated clients for the sandbox and for production,
+// so they keep working even when the trading key is missing or rejected. The
+// SDK is ESM-only and the scripts run under tsx as CommonJS, so the package is
+// loaded with a dynamic import.
 
 type Sdk = typeof import("@gemini-markets/sdk/server");
 
@@ -14,8 +15,19 @@ type EventsPage = Awaited<ReturnType<GeminiClient["predictions"]["listEvents"]>>
 export type GeminiEvent = NonNullable<EventsPage["data"]>[number];
 export type GeminiContract = NonNullable<GeminiEvent["contracts"]>[number];
 
-/** Per-call deadline. The SDK default of 30 s would use a route's whole budget. */
-export const REQUEST_TIMEOUT_MS = 10_000;
+/** Deadline for the parallel listing pages that build the feed: the whole build budget. */
+export const LIST_TIMEOUT_MS = 8_000;
+/** Deadline for one getEvent on the quote and settlement paths. */
+export const EVENT_TIMEOUT_MS = 3_000;
+/** Deadline for placeOrder. The SDK never retries POSTs. */
+export const ORDER_TIMEOUT_MS = 10_000;
+/** The API maximum page size for event listings. */
+export const PAGE_LIMIT = 500;
+/**
+ * A production page of 500 events runs to 15 MB (Sports events embed their
+ * sub-events); the SDK default cap is 16 MiB, so public clients get more room.
+ */
+const MAX_RESPONSE_BYTES = 64 * 1024 * 1024;
 
 let sdkPromise: Promise<Sdk> | null = null;
 
@@ -49,7 +61,7 @@ async function createAuthenticated(): Promise<GeminiClient> {
   const sdk = await getSdk();
   return sdk.createClient({
     env: "sandbox",
-    auth: new sdk.HmacAuth({ nonceMode: "time-based", apiKey, apiSecret }),
+    auth: new sdk.HmacAuth({ apiKey, apiSecret }),
     skipWsInit: true,
   });
 }
@@ -60,7 +72,7 @@ const publicPromises = new Map<GeminiEnv, Promise<GeminiClient>>();
 export function getPublicGemini(env: GeminiEnv): Promise<GeminiClient> {
   let promise = publicPromises.get(env);
   if (!promise) {
-    promise = getSdk().then((sdk) => sdk.createClient({ env, skipWsInit: true }));
+    promise = getSdk().then((sdk) => sdk.createClient({ env, skipWsInit: true, maxResponseSizeBytes: MAX_RESPONSE_BYTES }));
     publicPromises.set(env, promise);
     promise.catch(() => {
       if (publicPromises.get(env) === promise) publicPromises.delete(env);
@@ -69,57 +81,48 @@ export function getPublicGemini(env: GeminiEnv): Promise<GeminiClient> {
   return promise;
 }
 
-/** The API maximum page size for event listings. */
-export const PAGE_LIMIT = 500;
-/** getEvent attempts before a 404 is believed (see getEventOrNull). */
-const GET_EVENT_ATTEMPTS = 3;
-
-/**
- * getEvent, or null when Gemini answers 404 on every attempt. The sandbox is
- * served by replicas that disagree: in Phase 2 samples a ticker listed as active
- * with five minutes left returned 404, and the same ticker 200 on the next call
- * (3 of 6 lookups of 5-minute BTC events missed). Other errors propagate.
- */
-export async function getEventOrNull(client: GeminiClient, eventTicker: string): Promise<GeminiEvent | null> {
+/** One getEvent with a deadline: the event, null on 404, any other error propagates. */
+export async function getEventOrNull(client: GeminiClient, eventTicker: string, timeoutMs = EVENT_TIMEOUT_MS): Promise<GeminiEvent | null> {
   const sdk = await getSdk();
-  for (let attempt = 1; ; attempt++) {
-    try {
-      return await client.predictions.getEvent({ eventTicker }, { timeoutMs: REQUEST_TIMEOUT_MS });
-    } catch (error) {
-      if (!(error instanceof sdk.NotFoundError)) throw error;
-      if (attempt >= GET_EVENT_ATTEMPTS) return null;
-      await new Promise((resolve) => setTimeout(resolve, 300));
-    }
+  try {
+    return await client.predictions.getEvent({ eventTicker }, { timeoutMs });
+  } catch (error) {
+    if (error instanceof sdk.NotFoundError) return null;
+    throw error;
   }
 }
 
-/** One paginated listing of every active event. */
-export async function listActiveEventsOnce(client: GeminiClient): Promise<GeminiEvent[]> {
+/**
+ * Active events from up to `pages` listing pages of PAGE_LIMIT, requested in
+ * parallel under one deadline. A page that fails or times out is skipped (the
+ * next build fills it in); throws only when every page failed.
+ */
+export async function listActiveEvents(client: GeminiClient, pages: number, timeoutMs = LIST_TIMEOUT_MS): Promise<GeminiEvent[]> {
+  const results = await Promise.allSettled(
+    Array.from({ length: pages }, (_, index) =>
+      client.predictions.listEvents({ status: ["active"], limit: PAGE_LIMIT, offset: index * PAGE_LIMIT }, { timeoutMs }),
+    ),
+  );
   const events: GeminiEvent[] = [];
-  for (let offset = 0; ; offset += PAGE_LIMIT) {
-    const page = await client.predictions.listEvents(
-      { status: ["active"], limit: PAGE_LIMIT, offset },
-      { timeoutMs: REQUEST_TIMEOUT_MS },
-    );
-    const data = page.data ?? [];
-    events.push(...data);
-    const total = page.pagination?.total;
-    if (data.length < PAGE_LIMIT || (typeof total === "number" && events.length >= total)) break;
+  let failures = 0;
+  let firstError: unknown;
+  for (const result of results) {
+    if (result.status === "fulfilled") events.push(...(result.value.data ?? []));
+    else {
+      failures++;
+      firstError ??= result.reason;
+    }
   }
+  if (failures === results.length) throw firstError instanceof Error ? firstError : new Error("listEvents failed");
   return events;
 }
 
-/** The active event with this ticker from a fresh listing, or null. Fallback for a getEvent 404. */
-export async function findActiveEvent(client: GeminiClient, eventTicker: string): Promise<GeminiEvent | null> {
-  const events = await listActiveEventsOnce(client);
-  return events.find((event) => event.ticker === eventTicker) ?? null;
-}
-
 /**
- * The event with this ticker among the events settled in the last 24 hours
- * (most recent first, one page of 500), or null. Fallback for a getEvent 404.
+ * The active event with this ticker from a fresh listing (two pages), or null.
+ * Fallback for a getEvent 404 on the sandbox, which in Phase 2 missed tickers
+ * it had just listed as active. Used by lib/context.
  */
-export async function findRecentlySettledEvent(client: GeminiClient, eventTicker: string): Promise<GeminiEvent | null> {
-  const page = await client.predictions.listRecentlySettledEvents({ limit: PAGE_LIMIT }, { timeoutMs: REQUEST_TIMEOUT_MS });
-  return (page.data ?? []).find((event) => event.ticker === eventTicker) ?? null;
+export async function findActiveEvent(client: GeminiClient, eventTicker: string): Promise<GeminiEvent | null> {
+  const events = await listActiveEvents(client, 2);
+  return events.find((event) => event.ticker === eventTicker) ?? null;
 }

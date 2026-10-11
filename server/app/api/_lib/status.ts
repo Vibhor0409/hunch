@@ -3,11 +3,28 @@ import { capFor, laDayBounds, levelFor, stakeFor, type SettledRow } from "@/lib/
 import type { PlayerStatus } from "@/lib/types";
 
 /**
- * The PlayerStatus the app shows in the Deck header and after every swipe.
- * Level comes from every settled call (levelFor), cap and stake from the
- * level table, and paidUsedToday from paid swipes in the current
- * America/Los_Angeles calendar day. Pass `settled` (rows or a pending
- * promise) when the caller already loads it, to save one query.
+ * PlayerStatus from values already in hand: level from every settled call
+ * (levelFor), cap and stake from the level table, paidUsedToday as counted
+ * for the current America/Los_Angeles day. Pure, no queries.
+ */
+export function statusFrom(player: Player, settled: readonly SettledRow[], paidUsedToday: number): PlayerStatus {
+  const level = levelFor(settled);
+  const dailyCap = capFor(level);
+  return {
+    playerId: player.id,
+    name: player.name,
+    level,
+    dailyCap,
+    paidUsedToday,
+    paidLeftToday: Math.max(0, dailyCap - paidUsedToday),
+    stake: stakeFor(level),
+  };
+}
+
+/**
+ * The PlayerStatus the app shows in the Deck header, loaded from the
+ * database. Pass `settled` (rows or a pending promise) when the caller
+ * already loads it, to save one query.
  */
 export async function buildStatus(
   player: Player,
@@ -19,15 +36,5 @@ export async function buildStatus(
     settled ?? settledSwipes(player.id),
     paidCountBetween(player.id, startIso, endIso),
   ]);
-  const level = levelFor(rows);
-  const dailyCap = capFor(level);
-  return {
-    playerId: player.id,
-    name: player.name,
-    level,
-    dailyCap,
-    paidUsedToday,
-    paidLeftToday: Math.max(0, dailyCap - paidUsedToday),
-    stake: stakeFor(level),
-  };
+  return statusFrom(player, rows, paidUsedToday);
 }

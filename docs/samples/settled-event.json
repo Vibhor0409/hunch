@@ -1,15 +1,15 @@
 {
-  "id": "205556",
-  "title": "BTC price today at 6:30pm EDT",
-  "slug": "btc-price-today-at-630pm-edt",
+  "id": "205506",
+  "title": "ETH price today at 6:40pm EDT",
+  "slug": "eth-price-today-at-640pm-edt",
   "type": "binary",
   "category": "Crypto",
-  "ticker": "BTC15M2610112230",
+  "ticker": "ETH05M2610112240",
   "status": "settled",
-  "createdAt": "2026-10-11T22:10:50.397Z",
+  "createdAt": "2026-10-11T21:30:37.743Z",
   "contracts": [
     {
-      "id": "205556-298565",
+      "id": "205506-298480",
       "label": "Up",
       "description": {
         "data": {},
@@ -17,7 +17,7 @@
           {
             "data": {},
             "marks": [],
-            "value": "If the price of Bitcoin (BTC) is greater than or equal to the price specified in the title on October 11, 2026 at 6:30pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-XBTUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf).",
+            "value": "If the price of Ether (ETH) is greater than or equal to the price specified in the title on October 11, 2026 at 6:40pm ET, this market will resolve to Yes. Otherwise, it will resolve to No. If no eligible trade occurs during the contract window, this contract will resolve based on the most recent traded price prior. Outcome verified against the LS-LRRR-ETHUSD index. View the [full rules](https://assets.gemini.com/predictions/terms_and_conditions/eth_9eb0f142-3d78-49f4-8313-23c321836e79.pdf).",
             "nodeType": "text"
           }
         ],
@@ -28,25 +28,25 @@
         "sell": {}
       },
       "status": "settled",
-      "createdAt": "2026-10-11T22:10:50.397Z",
-      "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
+      "createdAt": "2026-10-11T21:30:37.743Z",
+      "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/eth_9eb0f142-3d78-49f4-8313-23c321836e79.pdf",
       "ticker": "UP",
-      "instrumentSymbol": "GEMI-BTC15M2610112230-UP",
+      "instrumentSymbol": "GEMI-ETH05M2610112240-UP",
       "marketState": "closed",
       "abbreviatedName": "Up",
       "color": "#4CAF50",
-      "expiryDate": "2026-10-11T22:30:00.000Z",
+      "expiryDate": "2026-10-11T22:40:00.000Z",
       "resolutionSide": "yes",
-      "resolvedAt": "2026-10-11T22:30:06.021Z",
-      "effectiveDate": "2026-10-11T22:15:00.000Z",
+      "resolvedAt": "2026-10-11T22:40:05.617Z",
+      "effectiveDate": "2026-10-11T22:35:00.000Z",
       "sortOrder": 0,
       "strike": {
         "type": "reference",
-        "value": "83534.31",
-        "availableAt": "2026-10-11T22:15:00.000Z"
+        "value": "2531.33",
+        "availableAt": "2026-10-11T22:35:00.000Z"
       },
-      "source": "LS-LRRR-XBTUSD",
-      "settlementValue": "83551.79983333334",
+      "source": "LS-LRRR-ETHUSD",
+      "settlementValue": "2532.0091666666667",
       "isCombo": false,
       "quantityIncrement": "0.01",
       "quantityMinimum": "0.01",
@@ -55,38 +55,38 @@
       "priceMinimum": "0.01"
     }
   ],
-  "effectiveDate": "2026-10-11T22:10:50.397Z",
+  "effectiveDate": "2026-10-11T21:30:37.743Z",
   "isLive": false,
   "participants": [],
-  "description": "Interval BTC price prediction event expiring on October 11, 2026 at 6:30pm ET",
-  "imageUrl": "https://assets.gemini.com/predictions/images/btc_ace6c0f4-f500-4b7d-a66c-a3ea5ea1d9e9.avif",
-  "series": "BTC15M",
-  "resolvedAt": "2026-10-11T22:30:06.021Z",
-  "volume": "2133",
-  "volume24h": "2133",
+  "description": "Interval ETH price prediction event expiring on October 11, 2026 at 6:40pm ET",
+  "imageUrl": "https://assets.gemini.com/predictions/images/eth_427f68cf-9bf1-4b52-9738-6e906c1e2146.avif",
+  "series": "ETH05M",
+  "resolvedAt": "2026-10-11T22:40:05.617Z",
+  "volume": "139",
+  "volume24h": "139",
   "tags": [
-    "Bitcoin"
+    "Ether"
   ],
-  "expiryDate": "2026-10-11T22:30:00.000Z",
-  "startTime": "2026-10-11T22:15:00.000Z",
-  "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/btc_398860b3-ea2f-47a7-b167-a8c6ad03d6d7.pdf",
+  "expiryDate": "2026-10-11T22:40:00.000Z",
+  "startTime": "2026-10-11T22:35:00.000Z",
+  "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/eth_9eb0f142-3d78-49f4-8313-23c321836e79.pdf",
   "subcategory": {
-    "id": 222,
-    "slug": "crypto_bitcoin",
-    "name": "Bitcoin",
+    "id": 223,
+    "slug": "crypto_ether",
+    "name": "Ether",
     "path": [
       "Crypto",
-      "Bitcoin"
+      "Ether"
     ]
   },
-  "socialImageUrl": "https://assets.gemini.com/predictions/images/btc_29510bf2-83f3-4d5e-beec-2d09f473347c.png",
-  "featuredImageUrl": "https://assets.gemini.com/predictions/images/Top_10_-_Bitcoin_1_23ea2ded-f899-4bbd-955d-355794d5ef0d.avif",
+  "socialImageUrl": "https://assets.gemini.com/predictions/images/eth_ad2adf62-6fe8-4b44-9191-0f6ac0124f9c.png",
+  "featuredImageUrl": "https://assets.gemini.com/predictions/images/Top_10_-_ETH_1_16c5f932-572c-46fe-b1f9-33d65ee671fb.avif",
   "template": "crypto-up-down",
   "eventTags": [
     {
-      "id": 2,
-      "name": "Fifteen Minute",
-      "slug": "fifteen-minute"
+      "id": 1,
+      "name": "Five Minute",
+      "slug": "five-minute"
     },
     {
       "id": 9,
@@ -94,13 +94,13 @@
       "slug": "up-down"
     }
   ],
-  "source": "LS-LRRR-XBTUSD",
+  "source": "LS-LRRR-ETHUSD",
   "settlement": {
-    "value": "83551.79983333334"
+    "value": "2532.0091666666667"
   },
   "sourceDetails": {
     "agency": "lukka",
-    "index": "LS-LRRR-XBTUSD"
+    "index": "LS-LRRR-ETHUSD"
   },
   "volumeDelta24hPct": "0"
 }

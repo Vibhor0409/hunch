@@ -1,0 +1,5 @@
+# Leaderboard seed
+
+The leaderboard starts with 14 seed players (names like "Maya R." and "Devin K.") so the board is not empty on first launch. They live only as database rows written by `server/scripts/seed-leaderboard.ts`, never in app or server source. Each seed player has 6 to 24 settled practice swipes (stake 0, no Gemini order) on real contracts from `docs/samples/events.json` and `events-production.json`, with questions built by the card text rule and Edge computed by `edgeFor` in `lib/game/scoring.ts`. The script is deterministic (fixed PRNG seed) and idempotent: it skips any name that already exists, so re-running it never touches real players. Add the seed with `cd server && npx tsx scripts/seed-leaderboard.ts`.
+
+Remove it with `cd server && npx tsx scripts/seed-leaderboard.ts --remove`, which deletes exactly those 14 players by name; their swipes go with them through the foreign key cascade. Real players accumulate alongside the seed: their swipes settle through `POST /api/settle` as usual, their Edge totals come from the same `leaderboard` view, and the API ranks everyone together, so a real player with more Edge than "Maya R." takes the top spot.

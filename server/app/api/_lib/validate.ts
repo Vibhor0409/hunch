@@ -4,7 +4,18 @@ import type { LaneFilter, Side } from "@/lib/types";
 /** Names: 2 to 20 characters of letters, digits and spaces, after trimming (SPEC F1). */
 const NAME_PATTERN = /^[\p{L}\p{Nd} ]{2,20}$/u;
 
-const LANE_FILTERS: readonly string[] = ["foryou", "live", "tomorrow", "week"];
+/**
+ * Every accepted lane value, keyed by the LaneFilter type itself: when a lane
+ * is added to or removed from lib/types.ts this object stops compiling until
+ * it matches, so the runtime check cannot drift from the type.
+ */
+const LANE_FILTERS: Record<LaneFilter, true> = {
+  foryou: true,
+  live: true,
+  tomorrow: true,
+  week: true,
+  later: true,
+};
 
 /** The trimmed name when it is valid, otherwise null. */
 export function cleanName(value: unknown): string | null {
@@ -23,5 +34,5 @@ export function isSide(value: unknown): value is Side {
 }
 
 export function isLaneFilter(value: unknown): value is LaneFilter {
-  return typeof value === "string" && LANE_FILTERS.includes(value);
+  return typeof value === "string" && Object.prototype.hasOwnProperty.call(LANE_FILTERS, value);
 }

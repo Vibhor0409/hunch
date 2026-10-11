@@ -1,10 +1,7 @@
 // Order placement on the Gemini sandbox. One limit buy, immediate-or-cancel,
 // never retried. API failures come back as a receipt, never as a throw.
 import type { OrderReceipt, Side } from "../types";
-import { getGemini, getSdk } from "./client";
-
-/** Orders get a longer deadline than reads; the SDK never retries POSTs. */
-const ORDER_TIMEOUT_MS = 15_000;
+import { getGemini, getSdk, ORDER_TIMEOUT_MS } from "./client";
 
 type Sdk = Awaited<ReturnType<typeof getSdk>>;
 type OrderResponse = Awaited<ReturnType<Awaited<ReturnType<typeof getGemini>>["predictions"]["placeOrder"]>>;

@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { getPlayer, recentSwipes, settledSwipes, toRecentCall } from "@/lib/db";
 import { categoryStats, insight, progressFor } from "@/lib/game";
 import type { Profile } from "@/lib/types";
-import { errorJson, internalError, json } from "../_lib/http";
+import { errorJson, handle, json } from "../_lib/http";
 import { edgeTotalOf } from "../_lib/numbers";
 import { buildStatus } from "../_lib/status";
 
@@ -16,8 +16,8 @@ const RECENT_CALLS = 10;
  * GET /api/profile?playerId= -> 200 Profile
  * 404 player_not_found when the id is missing or unknown.
  */
-export async function GET(req: NextRequest): Promise<Response> {
-  try {
+export function GET(req: NextRequest): Promise<Response> {
+  return handle("profile", async () => {
     const playerId = req.nextUrl.searchParams.get("playerId");
     const player = playerId ? await getPlayer(playerId) : null;
     if (!player) return errorJson("player_not_found", 404);
@@ -39,7 +39,5 @@ export async function GET(req: NextRequest): Promise<Response> {
       recent: recent.map(toRecentCall),
     };
     return json(profile);
-  } catch (error) {
-    return internalError("profile", error);
-  }
+  });
 }

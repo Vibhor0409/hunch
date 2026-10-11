@@ -1,7 +1,7 @@
 import { counters, leaderboardRows, settledSwipesByPlayers } from "@/lib/db";
 import { levelFor } from "@/lib/game";
 import type { LeaderboardRow } from "@/lib/types";
-import { internalError, json } from "../_lib/http";
+import { handle, json } from "../_lib/http";
 import { round1 } from "../_lib/numbers";
 
 export const runtime = "nodejs";
@@ -14,8 +14,8 @@ const LIMIT = 100;
  * Rows come from the leaderboard view (Edge total descending); rank is the
  * position and level comes from each player's settled swipes in one query.
  */
-export async function GET(): Promise<Response> {
-  try {
+export function GET(): Promise<Response> {
+  return handle("leaderboard", async () => {
     const [entries, totals] = await Promise.all([leaderboardRows(LIMIT), counters()]);
     const settledByPlayer = await settledSwipesByPlayers(entries.map((entry) => entry.playerId));
 
@@ -28,7 +28,5 @@ export async function GET(): Promise<Response> {
       level: levelFor(settledByPlayer.get(entry.playerId) ?? []),
     }));
     return json({ rows, counters: totals });
-  } catch (error) {
-    return internalError("leaderboard", error);
-  }
+  });
 }
