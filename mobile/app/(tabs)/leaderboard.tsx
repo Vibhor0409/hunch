@@ -1,98 +1,158 @@
-// Leaderboard: counters from the database and ranked rows. Settles before it loads.
+// Leaderboard: counters from the database, a podium for the top three, ranked rows,
+// and your own row pinned at the bottom. Settlement runs alongside the load, never before it.
 
 import { useFocusEffect } from "expo-router";
-import { useCallback, useRef, useState } from "react";
+import { memo, useCallback, useRef, useState } from "react";
 import { FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { formatEdge, formatInt } from "@/components/format";
+import { count, formatEdge, formatInt, formatOrdinal } from "@/components/format";
 import { usePlayer } from "@/components/PlayerContext";
+import { Podium } from "@/components/Podium";
 import { EmptyView, ErrorView, LoadingView } from "@/components/StateViews";
-import { errorMessage, getLeaderboard, settle, type LeaderboardResponse } from "@/lib/api";
-import { colors, radii, space, type } from "@/lib/theme";
+import { errorMessage, getLeaderboard, isAbort, settle, type LeaderboardResponse } from "@/lib/api";
+import { colors, radii, shadows, space, type } from "@/lib/theme";
 import type { LeaderboardRow } from "@/lib/types";
 
 type Phase = "loading" | "ready" | "error";
 
 export default function LeaderboardScreen() {
   const { playerId } = usePlayer();
+  const insets = useSafeAreaInsets();
   const [data, setData] = useState<LeaderboardResponse | null>(null);
   const [phase, setPhase] = useState<Phase>("loading");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const hasData = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const load = useCallback(
-    async (pull: boolean) => {
-      if (pull) setRefreshing(true);
-      else if (!hasData.current) setPhase("loading");
-      try {
-        await settle().catch(() => {});
-        const res = await getLeaderboard();
-        hasData.current = true;
-        setData(res);
-        setNotice("");
-        setPhase("ready");
-      } catch (err) {
-        if (hasData.current) setNotice(errorMessage(err));
-        else {
-          setError(errorMessage(err));
-          setPhase("error");
-        }
-      } finally {
-        setRefreshing(false);
+  const fetchRows = useCallback(async (pull: boolean) => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    if (pull) setRefreshing(true);
+    else if (!hasData.current) setPhase("loading");
+    try {
+      const res = await getLeaderboard(controller.signal);
+      if (controller.signal.aborted) return;
+      hasData.current = true;
+      setData(res);
+      setNotice("");
+      setPhase("ready");
+    } catch (err) {
+      if (isAbort(err)) return;
+      if (hasData.current) setNotice(errorMessage(err));
+      else {
+        setError(errorMessage(err));
+        setPhase("error");
       }
+    } finally {
+      if (!controller.signal.aborted) setRefreshing(false);
+    }
+  }, []);
+
+  // Load now; settle in parallel and reload if anything settled.
+  const load = useCallback(
+    (pull: boolean) => {
+      fetchRows(pull);
+      settle()
+        .then((res) => {
+          if (res.settled > 0) fetchRows(false);
+        })
+        .catch(() => {});
     },
-    [],
+    [fetchRows],
   );
 
   useFocusEffect(
     useCallback(() => {
       load(false);
+      return () => abortRef.current?.abort();
     }, [load]),
   );
 
+  const renderItem = useCallback(
+    ({ item }: { item: LeaderboardRow }) => <Row row={item} me={item.playerId === playerId} />,
+    [playerId],
+  );
+
+  const rows = data?.rows ?? [];
+  const top = rows.slice(0, 3);
+  const rest = rows.slice(3);
+  const mine = rows.find((r) => r.playerId === playerId) ?? null;
+  const pinnedHeight = mine ? 72 + insets.bottom : 0;
+
   return (
     <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
-      <Text style={styles.title}>Leaderboard</Text>
-      {phase === "loading" ? <LoadingView /> : null}
+      {phase === "loading" ? <LoadingView label="Ranking players" /> : null}
       {phase === "error" ? <ErrorView message={error} onRetry={() => load(true)} refreshing={refreshing} /> : null}
       {phase === "ready" && data ? (
-        <FlatList
-          data={data.rows}
-          keyExtractor={(row) => row.playerId}
-          contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.accent} />}
-          ListHeaderComponent={
-            <View style={styles.headerGap}>
-              {notice ? <Text style={styles.notice}>{notice}</Text> : null}
-              <View testID="counters" style={styles.counters}>
-                <Counter label="Players" value={data.counters.players} />
-                <Counter label="Calls" value={data.counters.calls} />
-                <Counter label="Gemini orders" value={data.counters.geminiOrders} />
+        <>
+          <FlatList
+            data={rest}
+            keyExtractor={keyExtractor}
+            contentContainerStyle={[styles.list, { paddingBottom: space.huge + pinnedHeight }]}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.ink2} />}
+            ListHeaderComponent={
+              <View style={styles.headerGap}>
+                <Text style={styles.title}>Leaderboard</Text>
+                {notice ? <Text style={styles.notice}>{notice}</Text> : null}
+                <View testID="counters" style={styles.counters}>
+                  <Counter label="Players" value={data.counters.players} />
+                  <View style={styles.counterDivider} />
+                  <Counter label="Calls" value={data.counters.calls} />
+                  <View style={styles.counterDivider} />
+                  <Counter label="Gemini orders" value={data.counters.geminiOrders} />
+                </View>
+                {top.length > 0 ? <Podium rows={top} myId={playerId} /> : null}
+                {rest.length > 0 ? <Text style={styles.sectionLabel}>Everyone else</Text> : null}
+              </View>
+            }
+            ListEmptyComponent={
+              top.length === 0 ? <EmptyView title="No players yet." hint="Be the first to make a call." /> : null
+            }
+            renderItem={renderItem}
+            initialNumToRender={12}
+            windowSize={7}
+            removeClippedSubviews
+          />
+          {mine ? (
+            <View style={[styles.pinned, { paddingBottom: insets.bottom + space.sm }]} pointerEvents="box-none">
+              <View style={styles.pinnedCard} accessibilityLabel={`You are ${formatOrdinal(mine.rank)}`}>
+                <Text style={styles.pinnedRank}>{formatOrdinal(mine.rank)}</Text>
+                <View style={styles.pinnedBody}>
+                  <Text style={styles.pinnedName} numberOfLines={1}>
+                    {mine.name}
+                  </Text>
+                  <Text style={styles.pinnedMeta}>
+                    {count("settled call", mine.settledCalls)}, Level {mine.level}
+                  </Text>
+                </View>
+                <Text style={[styles.pinnedEdge, mine.edgeTotal > 0 && styles.edgePositive]}>{formatEdge(mine.edgeTotal)}</Text>
               </View>
             </View>
-          }
-          ListEmptyComponent={<EmptyView title="No players yet." hint="Be the first to make a call." />}
-          renderItem={({ item }) => <Row row={item} me={item.playerId === playerId} />}
-        />
+          ) : null}
+        </>
       ) : null}
     </SafeAreaView>
   );
 }
 
-function Counter({ label, value }: { label: string; value: number }) {
+function keyExtractor(row: LeaderboardRow): string {
+  return row.playerId;
+}
+
+const Counter = memo(function Counter({ label, value }: { label: string; value: number }) {
   return (
     <View style={styles.counter}>
       <Text style={styles.counterValue}>{formatInt(value)}</Text>
       <Text style={styles.counterLabel}>{label}</Text>
     </View>
   );
-}
+});
 
-function Row({ row, me }: { row: LeaderboardRow; me: boolean }) {
-  const edgeColor = row.edgeTotal > 0 ? colors.accent : row.edgeTotal < 0 ? colors.loss : colors.muted;
+const Row = memo(function Row({ row, me }: { row: LeaderboardRow; me: boolean }) {
   return (
     <View testID="leaderboard-row" style={[styles.row, me && styles.rowMe]}>
       <Text style={styles.rank}>{row.rank}</Text>
@@ -104,35 +164,33 @@ function Row({ row, me }: { row: LeaderboardRow; me: boolean }) {
           {me ? <Text style={styles.youTag}>You</Text> : null}
         </View>
         <Text style={styles.meta}>
-          {formatInt(row.settledCalls)} settled {"·"} Level {row.level}
+          {count("settled call", row.settledCalls)}, Level {row.level}
         </Text>
       </View>
-      <Text style={[styles.edge, { color: edgeColor }]}>{formatEdge(row.edgeTotal)}</Text>
+      <Text style={[styles.edge, row.edgeTotal > 0 && styles.edgePositive]}>{formatEdge(row.edgeTotal)}</Text>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  title: { ...type.title, paddingHorizontal: space.xl, paddingTop: space.sm, paddingBottom: space.md },
-  list: { paddingHorizontal: space.xl, paddingBottom: space.huge, flexGrow: 1 },
-  headerGap: { gap: space.md, marginBottom: space.md },
-  notice: { ...type.small, color: colors.loss },
+  screen: { flex: 1 },
+  title: { ...type.title, paddingTop: space.sm },
+  list: { paddingHorizontal: space.xl, flexGrow: 1 },
+  headerGap: { gap: space.lg, marginBottom: space.sm },
+  notice: { ...type.small, color: colors.no },
   counters: {
     flexDirection: "row",
-    gap: space.sm,
-  },
-  counter: {
-    flex: 1,
+    alignItems: "center",
     paddingVertical: space.md,
-    paddingHorizontal: space.md,
-    borderRadius: radii.tile,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.line,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.lineStrong,
   },
-  counterValue: { ...type.title, fontVariant: ["tabular-nums"] },
-  counterLabel: { ...type.label, marginTop: 2 },
+  counter: { flex: 1, alignItems: "center", gap: 2 },
+  counterDivider: { width: StyleSheet.hairlineWidth, height: 32, backgroundColor: colors.lineStrong },
+  counterValue: { ...type.stat, fontSize: 24, lineHeight: 28 },
+  counterLabel: { ...type.caption, color: colors.ink2 },
+  sectionLabel: { ...type.caption, color: colors.ink2, marginTop: space.xs },
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -141,14 +199,30 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm,
     paddingHorizontal: space.md,
     borderRadius: radii.tile,
-    marginBottom: space.xs,
   },
   rowMe: { backgroundColor: colors.accentSoft },
-  rank: { ...type.heading, color: colors.muted, width: 28, textAlign: "right", fontVariant: ["tabular-nums"] },
+  rank: { ...type.heading, color: colors.ink3, width: 30, textAlign: "right", fontVariant: ["tabular-nums"] },
   rowBody: { flex: 1 },
   nameRow: { flexDirection: "row", alignItems: "center", gap: space.sm },
   name: { ...type.heading, flexShrink: 1 },
-  youTag: { ...type.label, color: colors.accent, fontSize: 11 },
-  meta: { ...type.small, fontVariant: ["tabular-nums"] },
-  edge: { ...type.title, fontVariant: ["tabular-nums"] },
+  youTag: { ...type.caption, color: colors.accentDeep },
+  meta: { ...type.caption, fontVariant: ["tabular-nums"] },
+  edge: { ...type.title, fontSize: 22, lineHeight: 26, fontVariant: ["tabular-nums"] },
+  edgePositive: { color: colors.accentDeep },
+  pinned: { position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl },
+  pinnedCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.md,
+    minHeight: 64,
+    paddingHorizontal: space.lg,
+    borderRadius: radii.tile,
+    backgroundColor: colors.ink,
+    ...shadows.card,
+  },
+  pinnedRank: { ...type.heading, color: colors.accent, fontVariant: ["tabular-nums"], minWidth: 36 },
+  pinnedBody: { flex: 1 },
+  pinnedName: { ...type.heading, color: colors.onInk },
+  pinnedMeta: { ...type.caption, color: colors.lineStrong, fontVariant: ["tabular-nums"] },
+  pinnedEdge: { ...type.title, fontSize: 22, lineHeight: 26, color: colors.onInk, fontVariant: ["tabular-nums"] },
 });

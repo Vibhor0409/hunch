@@ -1,6 +1,7 @@
-// Typed client for the six Hunch API routes. Real calls only, never fixtures.
-// Base URL comes from EXPO_PUBLIC_API_URL. Every call times out after 10 seconds
-// and every failure becomes an ApiError with a short message for the screen.
+// Typed client for the Hunch API routes. Real calls only, never fixtures.
+// Base URL comes from EXPO_PUBLIC_API_URL. Reads time out after 10 seconds, the
+// swipe after 20, and every failure becomes an ApiError with a short message.
+// Callers can pass an AbortSignal to cancel a request they no longer need.
 
 import type {
   CardContext,
@@ -12,17 +13,22 @@ import type {
   Reveal,
   CardPublic,
   Side,
+  Wallet,
 } from "@/lib/types";
 
-const TIMEOUT_MS = 10_000;
+const READ_TIMEOUT_MS = 10_000;
+const SWIPE_TIMEOUT_MS = 20_000;
 
-export const OFFLINE_MESSAGE = "Can't reach Hunch. Pull to retry.";
+export const OFFLINE_MESSAGE = "Can't reach Hunch right now.";
 
 export type ApiErrorCode =
   | "offline"
   | "timeout"
+  | "aborted"
   | "name_taken"
   | "invalid_name"
+  | "invalid_lane"
+  | "invalid_stake"
   | "already_swiped"
   | "market_closed"
   | "gemini_unavailable"
@@ -31,9 +37,12 @@ export type ApiErrorCode =
 
 const MESSAGES: Record<ApiErrorCode, string> = {
   offline: OFFLINE_MESSAGE,
-  timeout: OFFLINE_MESSAGE,
+  timeout: "That took too long. Try again.",
+  aborted: "Cancelled.",
   name_taken: "That name is taken.",
   invalid_name: "Use 2 to 20 letters, digits or spaces.",
+  invalid_lane: "This lane isn't open yet.",
+  invalid_stake: "Pick an amount from $1 to $100.",
   already_swiped: "You already called this one.",
   market_closed: "This market just closed.",
   gemini_unavailable: "Gemini didn't answer. Try again.",
@@ -56,12 +65,22 @@ export class ApiError extends Error {
   get isOffline(): boolean {
     return this.code === "offline" || this.code === "timeout";
   }
+
+  /** True when the caller cancelled the request on purpose. */
+  get isAborted(): boolean {
+    return this.code === "aborted";
+  }
 }
 
 /** Turn any thrown value into a short message for the screen. */
 export function errorMessage(err: unknown): string {
   if (err instanceof ApiError) return err.message;
   return MESSAGES.unknown;
+}
+
+/** True when the error came from the caller cancelling, so screens can ignore it. */
+export function isAbort(err: unknown): boolean {
+  return err instanceof ApiError && err.isAborted;
 }
 
 function baseUrl(): string {
@@ -75,17 +94,44 @@ function baseUrl(): string {
 const KNOWN_CODES: ReadonlySet<string> = new Set<ApiErrorCode>([
   "name_taken",
   "invalid_name",
+  "invalid_lane",
+  "invalid_stake",
   "already_swiped",
   "market_closed",
   "gemini_unavailable",
 ]);
 
-async function request<T>(
-  path: string,
-  init: { method: "GET" | "POST"; body?: unknown } = { method: "GET" },
-): Promise<T> {
+interface RequestInit {
+  method: "GET" | "POST";
+  body?: unknown;
+  timeoutMs?: number;
+  signal?: AbortSignal;
+}
+
+async function request<T>(path: string, init: RequestInit = { method: "GET" }): Promise<T> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timeoutMs = init.timeoutMs ?? READ_TIMEOUT_MS;
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+
+  // Forward the caller's cancellation into our controller.
+  const outer = init.signal;
+  const onOuterAbort = () => controller.abort();
+  if (outer) {
+    if (outer.aborted) {
+      clearTimeout(timer);
+      throw new ApiError("aborted");
+    }
+    outer.addEventListener("abort", onOuterAbort);
+  }
+
+  const cleanup = () => {
+    clearTimeout(timer);
+    outer?.removeEventListener("abort", onOuterAbort);
+  };
 
   let response: Response;
   try {
@@ -99,14 +145,15 @@ async function request<T>(
       signal: controller.signal,
     });
   } catch (err) {
-    clearTimeout(timer);
+    cleanup();
     if (err instanceof ApiError) throw err;
     if (err instanceof Error && err.name === "AbortError") {
+      if (outer?.aborted && !timedOut) throw new ApiError("aborted");
       throw new ApiError("timeout");
     }
     throw new ApiError("offline");
   }
-  clearTimeout(timer);
+  cleanup();
 
   let payload: unknown = null;
   try {
@@ -151,9 +198,9 @@ export interface FeedResponse {
   status: PlayerStatus;
 }
 
-export function getFeed(lane: LaneFilter, playerId: string): Promise<FeedResponse> {
+export function getFeed(lane: LaneFilter, playerId: string, signal?: AbortSignal): Promise<FeedResponse> {
   const query = new URLSearchParams({ lane, playerId }).toString();
-  return request<FeedResponse>(`/api/feed?${query}`);
+  return request<FeedResponse>(`/api/feed?${query}`, { method: "GET", signal });
 }
 
 export interface SwipeRequest {
@@ -164,7 +211,7 @@ export interface SwipeRequest {
 }
 
 export function swipe(body: SwipeRequest): Promise<Reveal> {
-  return request<Reveal>("/api/swipe", { method: "POST", body });
+  return request<Reveal>("/api/swipe", { method: "POST", body, timeoutMs: SWIPE_TIMEOUT_MS });
 }
 
 export interface SettleResponse {
@@ -180,13 +227,28 @@ export interface LeaderboardResponse {
   counters: Counters;
 }
 
-export function getLeaderboard(): Promise<LeaderboardResponse> {
-  return request<LeaderboardResponse>("/api/leaderboard");
+export function getLeaderboard(signal?: AbortSignal): Promise<LeaderboardResponse> {
+  return request<LeaderboardResponse>("/api/leaderboard", { method: "GET", signal });
 }
 
-export function getProfile(playerId: string): Promise<Profile> {
+export function getProfile(playerId: string, signal?: AbortSignal): Promise<Profile> {
   const query = new URLSearchParams({ playerId }).toString();
-  return request<Profile>(`/api/profile?${query}`);
+  return request<Profile>(`/api/profile?${query}`, { method: "GET", signal });
+}
+
+// Play-money wallet (F8)
+
+export function getWallet(playerId: string, signal?: AbortSignal): Promise<Wallet> {
+  const query = new URLSearchParams({ playerId }).toString();
+  return request<Wallet>(`/api/wallet?${query}`, { method: "GET", signal });
+}
+
+export function setStakePerTrade(playerId: string, stakePerTrade: number): Promise<PlayerStatus> {
+  return request<PlayerStatus>("/api/settings", { method: "POST", body: { playerId, stakePerTrade } });
+}
+
+export function resetWallet(playerId: string): Promise<Wallet> {
+  return request<Wallet>("/api/wallet/reset", { method: "POST", body: { playerId } });
 }
 
 /** Live context for a card back. The server filters odds out; the app only renders `text`. */

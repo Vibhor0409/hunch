@@ -1,24 +1,39 @@
-// Deck: lane chips, the swipe limit header, the card stack, three buttons and the reveal.
+// Deck: the header, lane control, a stack of three slips, three buttons and the reveal.
+// The feed loads as soon as the player is known, lane changes cancel the request they
+// replace, the next lane is fetched while the deck is idle, and at most 20 cards sit in state.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useSharedValue } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { LaneChips } from "@/components/LaneChips";
+import { BrandStrip } from "@/components/BrandStrip";
+import { CardSkeleton } from "@/components/CardSkeleton";
+import { formatInt, formatMoney } from "@/components/format";
+import { HunchMark } from "@/components/HunchMark";
+import { LaneChips, nextLane } from "@/components/LaneChips";
 import { usePlayer } from "@/components/PlayerContext";
 import { RevealSheet, type SheetState } from "@/components/RevealSheet";
-import { EmptyView, ErrorView, LoadingView } from "@/components/StateViews";
-import { SwipeCard, type CardAction, type SwipeCardHandle } from "@/components/SwipeCard";
+import { EmptyView, ErrorView } from "@/components/StateViews";
+import { SwipeCard, type SwipeCardHandle } from "@/components/SwipeCard";
 import { isHidden, markSkipped, markSwiped } from "@/components/session";
-import { ApiError, errorMessage, getFeed, swipe as postSwipe } from "@/lib/api";
-import { colors, hit, radii, space, type } from "@/lib/theme";
+import { ApiError, errorMessage, getFeed, isAbort, swipe as postSwipe, type FeedResponse } from "@/lib/api";
+import { colors, hit, radii, shadows, space, type } from "@/lib/theme";
 import type { CardPublic, LaneFilter, PlayerStatus, Side } from "@/lib/types";
 
 type Phase = "loading" | "ready" | "error";
 
-const PREFETCH_AT = 3;
 const VISIBLE = 3;
-const CLOCK_MS = 20_000;
+const MAX_CARDS = 20;
+const REFILL_AT = 4;
+const CLOCK_MS = 15_000;
+const CACHE_TTL_MS = 60_000;
+const PREFETCH_DELAY_MS = 900;
+
+interface CacheEntry {
+  res: FeedResponse;
+  at: number;
+}
 
 export default function DeckScreen() {
   const { playerId } = usePlayer();
@@ -36,7 +51,16 @@ export default function DeckScreen() {
 
   const topRef = useRef<SwipeCardHandle>(null);
   const requestId = useRef(0);
-  const prefetching = useRef(false);
+  const cache = useRef(new Map<LaneFilter, CacheEntry>());
+  const inflight = useRef(new Map<LaneFilter, Promise<FeedResponse>>());
+  const refilling = useRef(false);
+  const cardsRef = useRef<CardPublic[]>(cards);
+  useEffect(() => {
+    cardsRef.current = cards;
+  }, [cards]);
+
+  // How far the top card has travelled toward a commit. The cards behind read it.
+  const topProgress = useSharedValue(0);
 
   // Clock for "closes in 4m".
   useEffect(() => {
@@ -44,7 +68,39 @@ export default function DeckScreen() {
     return () => clearInterval(t);
   }, []);
 
-  // Reset the deck synchronously (in the event handler), then the effect below fetches.
+  const applyFeed = useCallback((res: FeedResponse) => {
+    setCards(res.cards.filter((c) => !isHidden(c.instrumentSymbol)).slice(0, MAX_CARDS));
+    setStatus(res.status);
+    setExhausted(false);
+    setError("");
+    setPhase("ready");
+  }, []);
+
+  // One fetch per lane at a time. Results land in the cache for instant lane switches.
+  const fetchLane = useCallback(
+    (target: LaneFilter, signal?: AbortSignal): Promise<FeedResponse> => {
+      if (!playerId) return Promise.reject(new ApiError("offline"));
+      const existing = inflight.current.get(target);
+      if (existing) return existing;
+      const p = getFeed(target, playerId, signal)
+        .then((res) => {
+          cache.current.set(target, { res, at: Date.now() });
+          return res;
+        })
+        .finally(() => {
+          inflight.current.delete(target);
+        });
+      inflight.current.set(target, p);
+      return p;
+    },
+    [playerId],
+  );
+
+  const freshCache = useCallback((target: LaneFilter): FeedResponse | null => {
+    const entry = cache.current.get(target);
+    return entry && Date.now() - entry.at < CACHE_TTL_MS ? entry.res : null;
+  }, []);
+
   const resetDeck = useCallback(() => {
     setPhase("loading");
     setError("");
@@ -52,76 +108,105 @@ export default function DeckScreen() {
     setExhausted(false);
     setSheet(null);
     setFlipped(false);
-  }, []);
+    topProgress.set(0);
+  }, [topProgress]);
 
   const onLaneChange = useCallback(
     (next: LaneFilter) => {
       if (next === lane) return;
+      requestId.current += 1; // anything in flight for the old lane is now stale
       setLane(next);
-      resetDeck();
+      setSheet(null);
+      setFlipped(false);
+      topProgress.set(0);
+      const cached = freshCache(next);
+      if (cached) applyFeed(cached);
+      else resetDeck();
     },
-    [lane, resetDeck],
+    [lane, applyFeed, resetDeck, topProgress, freshCache],
   );
 
   const retry = useCallback(() => {
+    cache.current.delete(lane);
     resetDeck();
     setReloadKey((k) => k + 1);
-  }, [resetDeck]);
+  }, [lane, resetDeck]);
 
-  // Load the lane. State updates happen only after the response arrives.
+  // Load the lane. A lane change or retry aborts the request it replaces.
   useEffect(() => {
     if (!playerId) return;
+    // A fresh cache entry was already applied by the lane handler; nothing to fetch.
+    if (freshCache(lane)) return;
     const id = ++requestId.current;
-    getFeed(lane, playerId)
+    const controller = new AbortController();
+    fetchLane(lane, controller.signal)
       .then((res) => {
         if (id !== requestId.current) return;
-        setCards(res.cards.filter((c) => !isHidden(c.instrumentSymbol)));
-        setStatus(res.status);
-        setPhase("ready");
+        applyFeed(res);
       })
       .catch((err: unknown) => {
-        if (id !== requestId.current) return;
+        if (id !== requestId.current || isAbort(err)) return;
         setError(errorMessage(err));
         setPhase("error");
       });
-  }, [lane, playerId, reloadKey]);
+    return () => {
+      controller.abort();
+    };
+  }, [lane, playerId, reloadKey, fetchLane, applyFeed, freshCache]);
 
-  // Prefetch when the stack runs low. Stops once a fetch brings nothing new.
+  // Refill the same lane when the stack runs low. Stops once a fetch brings nothing new.
   useEffect(() => {
-    if (phase !== "ready" || !playerId || exhausted || prefetching.current) return;
-    if (cards.length > PREFETCH_AT) return;
-    prefetching.current = true;
+    if (phase !== "ready" || !playerId || exhausted || busy || refilling.current) return;
+    if (cards.length > REFILL_AT) return;
+    refilling.current = true;
     const id = requestId.current;
     getFeed(lane, playerId)
       .then((res) => {
         if (id !== requestId.current) return;
+        cache.current.set(lane, { res, at: Date.now() });
         setStatus(res.status);
-        setCards((current) => {
-          const seen = new Set(current.map((c) => c.instrumentSymbol));
-          const fresh = res.cards.filter((c) => !seen.has(c.instrumentSymbol) && !isHidden(c.instrumentSymbol));
-          if (fresh.length === 0) setExhausted(true);
-          return fresh.length ? [...current, ...fresh] : current;
-        });
+        const seen = new Set(cardsRef.current.map((c) => c.instrumentSymbol));
+        const fresh = res.cards.filter((c) => !seen.has(c.instrumentSymbol) && !isHidden(c.instrumentSymbol));
+        if (fresh.length === 0) {
+          setExhausted(true);
+          return;
+        }
+        setCards((current) => [...current, ...fresh.filter((c) => !current.some((x) => x.instrumentSymbol === c.instrumentSymbol))].slice(0, MAX_CARDS));
       })
       .catch(() => {
         // The stack keeps what it has; the next low point tries again.
       })
       .finally(() => {
-        prefetching.current = false;
+        refilling.current = false;
       });
-  }, [cards.length, phase, lane, playerId, exhausted]);
+  }, [cards.length, phase, lane, playerId, exhausted, busy]);
 
-  const removeTop = useCallback((symbol: string) => {
-    setCards((current) => current.filter((c) => c.instrumentSymbol !== symbol));
-    setFlipped(false);
-  }, []);
+  // Prefetch the next lane while the deck is idle, so switching feels instant.
+  useEffect(() => {
+    if (phase !== "ready" || !playerId || busy || sheet !== null) return;
+    const target = nextLane(lane);
+    if (freshCache(target)) return;
+    const t = setTimeout(() => {
+      fetchLane(target).catch(() => {});
+    }, PREFETCH_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [phase, lane, playerId, busy, sheet, fetchLane, freshCache]);
+
+  const removeTop = useCallback(
+    (symbol: string) => {
+      topProgress.set(0);
+      setCards((current) => current.filter((c) => c.instrumentSymbol !== symbol));
+      setFlipped(false);
+    },
+    [topProgress],
+  );
 
   const onCommit = useCallback(
     (card: CardPublic, side: Side) => {
       if (!playerId) return;
       setBusy(true);
       removeTop(card.instrumentSymbol);
-      setSheet({ kind: "pending", side, question: card.question });
+      setSheet({ kind: "pending", card, side });
       postSwipe({
         playerId,
         eventTicker: card.eventTicker,
@@ -131,13 +216,20 @@ export default function DeckScreen() {
         .then((reveal) => {
           markSwiped(card.instrumentSymbol);
           setStatus(reveal.status);
-          setSheet({ kind: "ready", side, question: card.question, reveal });
+          setSheet({ kind: "ready", card, side, reveal });
         })
         .catch((err: unknown) => {
-          if (err instanceof ApiError && (err.code === "already_swiped" || err.code === "market_closed")) {
+          const final = err instanceof ApiError && (err.code === "already_swiped" || err.code === "market_closed");
+          if (final) {
             markSwiped(card.instrumentSymbol);
+            setSheet({ kind: "error", card, side, message: errorMessage(err), restorable: false });
+            return;
           }
-          setSheet({ kind: "error", side, question: card.question, message: errorMessage(err) });
+          // Put the card back on top so the call can be retried.
+          setCards((current) =>
+            current.some((c) => c.instrumentSymbol === card.instrumentSymbol) ? current : [card, ...current],
+          );
+          setSheet({ kind: "error", card, side, message: errorMessage(err), restorable: true });
         })
         .finally(() => setBusy(false));
     },
@@ -153,8 +245,12 @@ export default function DeckScreen() {
   );
 
   const onNext = useCallback(() => setSheet(null), []);
+  const onDismiss = useCallback(() => setSheet(null), []);
+  const onRetry = useCallback((card: CardPublic, side: Side) => onCommit(card, side), [onCommit]);
 
-  const act = (action: CardAction) => topRef.current?.fling(action);
+  const actNo = useCallback(() => topRef.current?.fling("no"), []);
+  const actSkip = useCallback(() => topRef.current?.fling("skip"), []);
+  const actYes = useCallback(() => topRef.current?.fling("yes"), []);
 
   const interactive = phase === "ready" && cards.length > 0 && !busy && sheet === null && !flipped;
   const visible = cards.slice(0, VISIBLE);
@@ -165,10 +261,10 @@ export default function DeckScreen() {
       <LaneChips value={lane} onChange={onLaneChange} disabled={busy || sheet !== null} />
 
       <View style={styles.stack}>
-        {phase === "loading" ? <LoadingView label="Finding live markets" /> : null}
+        {phase === "loading" ? <CardSkeleton label="Finding live markets" /> : null}
         {phase === "error" ? <ErrorView message={error} onRetry={retry} /> : null}
         {phase === "ready" && cards.length === 0 ? (
-          <EmptyView title="No markets in this lane right now." hint="Try another lane or pull again later." />
+          <EmptyView title="Nothing left in this lane right now." hint="Try another lane, or come back in a few minutes." />
         ) : null}
         {phase === "ready"
           ? visible
@@ -180,8 +276,9 @@ export default function DeckScreen() {
                   index={index}
                   now={now}
                   enabled={index === 0 && interactive}
-                  onCommit={(side) => onCommit(card, side)}
-                  onSkip={() => onSkip(card)}
+                  topProgress={topProgress}
+                  onCommit={onCommit}
+                  onSkip={onSkip}
                   onFlip={index === 0 ? setFlipped : undefined}
                 />
               ))
@@ -190,54 +287,67 @@ export default function DeckScreen() {
       </View>
 
       <View style={styles.buttons}>
-        <CallButton testID="btn-no" label="NO" color={colors.no} onPress={() => act("no")} disabled={!interactive} />
+        <CallButton testID="btn-no" label="NO" color={colors.no} onPress={actNo} disabled={!interactive} />
         <Pressable
           testID="btn-skip"
           accessibilityRole="button"
+          accessibilityLabel="Skip"
           accessibilityState={{ disabled: !interactive }}
           disabled={!interactive}
-          onPress={() => act("skip")}
+          onPress={actSkip}
           style={({ pressed }) => [styles.skip, !interactive && styles.disabled, pressed && styles.pressed]}
         >
           <Text style={styles.skipText}>Skip</Text>
         </Pressable>
-        <CallButton testID="btn-yes" label="YES" color={colors.yes} onPress={() => act("yes")} disabled={!interactive} />
+        <CallButton testID="btn-yes" label="YES" color={colors.yes} onPress={actYes} disabled={!interactive} />
       </View>
+      <BrandStrip variant="plain" style={styles.footer} />
 
-      <RevealSheet state={sheet} onNext={onNext} />
+      <RevealSheet state={sheet} onNext={onNext} onRetry={onRetry} onDismiss={onDismiss} />
     </SafeAreaView>
   );
 }
 
-function Header({ status }: { status: PlayerStatus | null }) {
-  if (!status) {
-    return <View style={styles.header} />;
-  }
-  const practice = status.paidLeftToday <= 0;
+const Header = memo(function Header({ status }: { status: PlayerStatus | null }) {
+  const practice = status !== null && status.paidLeftToday <= 0;
+  const balance = status && typeof status.balance === "number" ? formatMoney(status.balance) : null;
   return (
     <View style={styles.header}>
       <View style={styles.headerRow}>
-        <View>
-          <Text style={type.label}>Paid swipes left today</Text>
-          <Text style={styles.headerNumber}>
-            {status.paidLeftToday} of {status.dailyCap}
-          </Text>
+        <View style={styles.brand}>
+          <HunchMark size={26} />
+          <Text style={styles.wordmark}>Hunch</Text>
         </View>
-        <View style={styles.headerRight}>
-          {practice ? (
-            <View style={styles.practiceBadge}>
-              <Text style={styles.practiceBadgeText}>Practice</Text>
-            </View>
-          ) : null}
-          <Text style={styles.level}>Level {status.level}</Text>
-        </View>
+        {status ? (
+          <View style={styles.levelPill}>
+            <Text style={styles.levelText}>Level {status.level}</Text>
+          </View>
+        ) : null}
       </View>
-      {practice ? <Text style={styles.practiceLine}>Practice calls still score Edge.</Text> : null}
+      <View style={styles.statsRow}>
+        <View style={styles.stat}>
+          <View style={styles.statLine}>
+            <Text style={styles.statNumber}>{status ? `${formatInt(status.paidLeftToday)} of ${formatInt(status.dailyCap)}` : " "}</Text>
+            {practice ? (
+              <View style={styles.practiceBadge}>
+                <Text style={styles.practiceBadgeText}>Practice</Text>
+              </View>
+            ) : null}
+          </View>
+          <Text style={styles.statLabel}>{practice ? "Practice calls still score Edge." : "Paid swipes left today"}</Text>
+        </View>
+        {balance ? (
+          <View style={[styles.stat, styles.statRight]}>
+            <Text style={styles.statNumber}>{balance}</Text>
+            <Text style={styles.statLabel}>Play money</Text>
+          </View>
+        ) : null}
+      </View>
     </View>
   );
-}
+});
 
-function CallButton({
+const CallButton = memo(function CallButton({
   testID,
   label,
   color,
@@ -262,50 +372,68 @@ function CallButton({
       <Text style={[styles.callText, { color }]}>{label}</Text>
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  header: { paddingHorizontal: space.xl, paddingTop: space.sm, paddingBottom: space.lg, minHeight: 72 },
-  headerRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" },
-  headerNumber: { ...type.bigNumber, marginTop: 2 },
-  headerRight: { alignItems: "flex-end", gap: space.xs },
-  level: { ...type.heading, color: colors.muted, fontVariant: ["tabular-nums"] },
-  practiceBadge: {
-    paddingHorizontal: space.sm,
-    paddingVertical: 2,
-    borderRadius: radii.chip,
-    backgroundColor: colors.accent,
+  screen: { flex: 1 },
+  header: { paddingHorizontal: space.xl, paddingTop: space.sm, paddingBottom: space.md, gap: space.sm },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  brand: { flexDirection: "row", alignItems: "center", gap: space.sm },
+  wordmark: { ...type.heading, fontSize: 19, letterSpacing: -0.4 },
+  levelPill: {
+    height: 28,
+    paddingHorizontal: space.md,
+    borderRadius: radii.pill,
+    backgroundColor: colors.accentSoft,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  practiceBadgeText: { ...type.label, color: colors.onAccent, fontSize: 11 },
-  practiceLine: { ...type.small, color: colors.accent, marginTop: space.xs },
+  levelText: { ...type.caption, color: colors.accentDeep, fontVariant: ["tabular-nums"] },
+  statsRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: space.md, minHeight: 44 },
+  stat: { gap: 1 },
+  statRight: { alignItems: "flex-end" },
+  statLine: { flexDirection: "row", alignItems: "center", gap: space.sm },
+  statNumber: { ...type.stat, fontSize: 24, lineHeight: 28 },
+  statLabel: { ...type.caption, color: colors.ink2 },
+  practiceBadge: {
+    height: 22,
+    paddingHorizontal: space.sm,
+    borderRadius: 6,
+    backgroundColor: colors.accent,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  practiceBadgeText: { ...type.caption, color: colors.onAccent },
   stack: { flex: 1, marginHorizontal: space.xl, marginTop: space.lg },
   buttons: {
     flexDirection: "row",
     alignItems: "center",
     gap: space.md,
     paddingHorizontal: space.xl,
-    paddingTop: space.lg,
-    paddingBottom: space.md,
+    paddingTop: space.xl,
+    paddingBottom: space.sm,
   },
   call: {
     flex: 1,
     minHeight: 60,
     borderRadius: radii.button,
-    borderWidth: 2,
-    backgroundColor: colors.surface,
+    borderWidth: 2.5,
+    backgroundColor: colors.card,
     alignItems: "center",
     justifyContent: "center",
+    ...shadows.tile,
   },
-  callText: { fontSize: 18, fontWeight: "800", letterSpacing: 1.5 },
+  callText: { fontSize: 18, fontWeight: "900", letterSpacing: 2 },
   skip: {
-    minWidth: 64,
+    minWidth: 72,
     minHeight: hit.min,
-    borderRadius: radii.chip,
+    borderRadius: radii.pill,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: colors.paperDeep,
   },
-  skipText: { ...type.small, color: colors.muted, fontWeight: "600" },
+  skipText: { ...type.small, color: colors.ink, fontWeight: "700" },
+  footer: { paddingBottom: space.sm },
   disabled: { opacity: 0.35 },
-  pressed: { opacity: 0.75 },
+  pressed: { opacity: 0.75, transform: [{ scale: 0.98 }] },
 });

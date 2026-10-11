@@ -1,73 +1,86 @@
 // Edge by category: diverging bars from a center axis, drawn with react-native-svg.
-// Positive Edge runs right in amber, negative runs left in rose. Values stay in text ink.
+// Ahead of the market runs right in marigold, behind runs left in ink. Marks are
+// thin, square at the axis with a rounded data end, and a surface gap at the axis.
+// Values stay in text ink; the colored mark carries the polarity.
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import { StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import Svg, { Line, Path } from "react-native-svg";
 
-import { formatEdge, formatInt, formatPct } from "@/components/format";
+import { CategoryGlyph, categoryTone } from "@/components/Category";
+import { count, formatEdge, formatPct } from "@/components/format";
 import { colors, space, type } from "@/lib/theme";
 import type { CategoryStat } from "@/lib/types";
 
 const ROW_H = 14;
 const BAR_H = 10;
-const RADIUS = BAR_H / 2;
+const END_R = 4; // rounded data end
 const GAP = 2; // surface gap between the axis and the bar
 
-export function CategoryBars({ categories }: { categories: CategoryStat[] }) {
+export const CategoryBars = memo(function CategoryBars({ categories }: { categories: CategoryStat[] }) {
   const [width, setWidth] = useState(0);
-  const max = categories.reduce((m, c) => Math.max(m, Math.abs(c.edgeTotal)), 0);
+  const sorted = [...categories].sort((a, b) => b.edgeTotal - a.edgeTotal);
+  const max = sorted.reduce((m, c) => Math.max(m, Math.abs(c.edgeTotal)), 0);
   const onLayout = (e: LayoutChangeEvent) => setWidth(Math.floor(e.nativeEvent.layout.width));
 
   return (
     <View style={styles.wrap} onLayout={onLayout}>
-      <Text style={type.label}>Edge by category</Text>
-      {categories.map((stat) => (
+      <View style={styles.header}>
+        <Text style={type.heading}>Edge by category</Text>
+        <View style={styles.legend}>
+          <View style={[styles.swatch, { backgroundColor: colors.ink3 }]} />
+          <Text style={styles.legendText}>Behind</Text>
+          <View style={[styles.swatch, { backgroundColor: colors.accent }]} />
+          <Text style={styles.legendText}>Ahead</Text>
+        </View>
+      </View>
+      {sorted.map((stat) => (
         <CategoryBar key={stat.category} stat={stat} max={max} width={width} />
       ))}
     </View>
   );
-}
+});
 
-function CategoryBar({ stat, max, width }: { stat: CategoryStat; max: number; width: number }) {
+const CategoryBar = memo(function CategoryBar({ stat, max, width }: { stat: CategoryStat; max: number; width: number }) {
+  const tone = categoryTone(stat.category);
   const half = Math.floor(width / 2) + 0.5;
   const positive = stat.edgeTotal >= 0;
   const room = half - GAP - 1;
   const scaled = max > 0 ? room * Math.min(1, Math.abs(stat.edgeTotal) / max) : 0;
-  const barLen = stat.edgeTotal === 0 ? 0 : Math.max(scaled, RADIUS + 1);
+  const barLen = stat.edgeTotal === 0 ? 0 : Math.max(scaled, END_R + 2);
 
   return (
     <View testID="category-bar" style={styles.row}>
       <View style={styles.meta}>
-        <Text style={styles.name} numberOfLines={1}>
-          {stat.category}
-        </Text>
+        <View style={styles.name}>
+          <CategoryGlyph category={tone.key} color={tone.ink} size={14} />
+          <Text style={styles.nameText} numberOfLines={1}>
+            {tone.label}
+          </Text>
+        </View>
         <Text style={styles.value}>{formatEdge(stat.edgeTotal)}</Text>
       </View>
 
       {width > 0 ? (
         <Svg width={width} height={ROW_H}>
           <Line x1={half} y1={0} x2={half} y2={ROW_H} stroke={colors.lineStrong} strokeWidth={1} />
-          {barLen > 0 ? (
-            <Path d={barPath(half, barLen, positive)} fill={positive ? colors.accent : colors.loss} />
-          ) : null}
+          {barLen > 0 ? <Path d={barPath(half, barLen, positive)} fill={positive ? colors.accent : colors.ink3} /> : null}
         </Svg>
       ) : (
         <View style={styles.placeholder} />
       )}
 
       <Text style={styles.sub}>
-        {formatInt(stat.settledCalls)} {stat.settledCalls === 1 ? "call" : "calls"} {"·"} hit{" "}
-        {formatPct(stat.hitRate * 100)} {"·"} implied {formatPct(stat.avgImplied * 100)}
+        {count("call", stat.settledCalls)}, hit {formatPct(stat.hitRate * 100)}, implied {formatPct(stat.avgImplied * 100)}
       </Text>
     </View>
   );
-}
+});
 
 /** A bar anchored square at the axis with a rounded far end. */
 function barPath(axis: number, length: number, positive: boolean): string {
   const y = (ROW_H - BAR_H) / 2;
-  const r = RADIUS;
+  const r = END_R;
   if (positive) {
     const x0 = axis + GAP;
     const x1 = x0 + length;
@@ -80,10 +93,15 @@ function barPath(axis: number, length: number, positive: boolean): string {
 
 const styles = StyleSheet.create({
   wrap: { gap: space.md },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.md },
+  legend: { flexDirection: "row", alignItems: "center", gap: 6 },
+  swatch: { width: 10, height: 10, borderRadius: 3, marginLeft: 6 },
+  legendText: { ...type.caption, color: colors.ink2 },
   row: { gap: 6 },
   meta: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.md },
-  name: { ...type.body, flexShrink: 1 },
-  value: { ...type.body, fontVariant: ["tabular-nums"] },
+  name: { flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 },
+  nameText: { ...type.body, fontWeight: "600", flexShrink: 1 },
+  value: { ...type.body, fontWeight: "700", fontVariant: ["tabular-nums"] },
   placeholder: { height: ROW_H },
-  sub: { ...type.small, fontVariant: ["tabular-nums"] },
+  sub: { ...type.caption, fontVariant: ["tabular-nums"] },
 });

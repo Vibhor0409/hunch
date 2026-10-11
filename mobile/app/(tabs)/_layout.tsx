@@ -13,8 +13,8 @@ export default function TabsLayout() {
         headerShown: false,
         sceneStyle: styles.scene,
         tabBarStyle: styles.bar,
-        tabBarActiveTintColor: colors.accent,
-        tabBarInactiveTintColor: colors.faint,
+        tabBarActiveTintColor: colors.ink,
+        tabBarInactiveTintColor: colors.ink3,
         tabBarLabelStyle: styles.label,
         tabBarHideOnKeyboard: true,
       }}
@@ -45,11 +45,11 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
-  scene: { backgroundColor: colors.bg },
+  scene: { backgroundColor: "transparent" },
   bar: {
-    backgroundColor: colors.bg,
+    backgroundColor: colors.card,
     borderTopColor: colors.line,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  label: { fontSize: 11, fontWeight: "600" },
+  label: { fontSize: 11, fontWeight: "700" },
 });

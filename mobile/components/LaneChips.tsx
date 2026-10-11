@@ -1,8 +1,12 @@
-// Lane chips above the deck. Four lanes, one selected.
+// Lane control above the deck: a real segmented control. One track, five segments,
+// a raised thumb that slides to the selection.
 
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import * as Haptics from "expo-haptics";
+import { memo, useCallback, useEffect, useRef } from "react";
+import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 
-import { colors, radii, space, type } from "@/lib/theme";
+import { colors, radii, shadows, space, springs } from "@/lib/theme";
 import type { LaneFilter } from "@/lib/types";
 
 export const LANES: { key: LaneFilter; label: string }[] = [
@@ -10,9 +14,18 @@ export const LANES: { key: LaneFilter; label: string }[] = [
   { key: "live", label: "Live" },
   { key: "tomorrow", label: "Tomorrow" },
   { key: "week", label: "This week" },
+  { key: "later", label: "Later" },
 ];
 
-export function LaneChips({
+/** The lane after `lane` in the control, for idle prefetching. */
+export function nextLane(lane: LaneFilter): LaneFilter {
+  const i = LANES.findIndex((l) => l.key === lane);
+  return LANES[(i + 1) % LANES.length].key;
+}
+
+const PAD = 3;
+
+export const LaneChips = memo(function LaneChips({
   value,
   onChange,
   disabled = false,
@@ -21,10 +34,57 @@ export function LaneChips({
   onChange: (lane: LaneFilter) => void;
   disabled?: boolean;
 }) {
+  const frames = useRef<({ x: number; width: number } | null)[]>(LANES.map(() => null));
+  const measured = useRef(false);
+  const thumbX = useSharedValue(0);
+  const thumbW = useSharedValue(0);
+  const thumbOpacity = useSharedValue(0);
+
+  const selectedIndex = Math.max(
+    0,
+    LANES.findIndex((l) => l.key === value),
+  );
+
+  const moveThumb = useCallback(
+    (index: number, animate: boolean) => {
+      const frame = frames.current[index];
+      if (!frame) return;
+      if (animate) {
+        thumbX.set(withSpring(frame.x, springs.quick));
+        thumbW.set(withSpring(frame.width, springs.quick));
+      } else {
+        thumbX.set(frame.x);
+        thumbW.set(frame.width);
+      }
+      thumbOpacity.set(1);
+    },
+    [thumbX, thumbW, thumbOpacity],
+  );
+
+  useEffect(() => {
+    moveThumb(selectedIndex, measured.current);
+  }, [selectedIndex, moveThumb]);
+
+  const onSegmentLayout = (index: number) => (e: LayoutChangeEvent) => {
+    const { x, width } = e.nativeEvent.layout;
+    frames.current[index] = { x, width };
+    if (index === selectedIndex) {
+      moveThumb(index, measured.current);
+      measured.current = true;
+    }
+  };
+
+  const thumbStyle = useAnimatedStyle(() => ({
+    opacity: thumbOpacity.get(),
+    width: thumbW.get(),
+    transform: [{ translateX: thumbX.get() }],
+  }));
+
   return (
-    <View style={styles.row}>
-      {LANES.map((lane) => {
-        const selected = lane.key === value;
+    <View style={[styles.track, disabled && styles.trackDisabled]} accessibilityRole="tablist">
+      <Animated.View pointerEvents="none" style={[styles.thumb, thumbStyle]} />
+      {LANES.map((lane, index) => {
+        const selected = index === selectedIndex;
         return (
           <Pressable
             key={lane.key}
@@ -32,36 +92,56 @@ export function LaneChips({
             accessibilityRole="tab"
             accessibilityState={{ selected, disabled }}
             disabled={disabled}
-            onPress={() => onChange(lane.key)}
-            hitSlop={{ top: 6, bottom: 6, left: 2, right: 2 }}
-            style={({ pressed }) => [
-              styles.chip,
-              selected && styles.chipSelected,
-              pressed && styles.pressed,
-            ]}
+            onLayout={onSegmentLayout(index)}
+            onPress={() => {
+              if (selected) return;
+              Haptics.selectionAsync().catch(() => {});
+              onChange(lane.key);
+            }}
+            style={styles.segment}
           >
-            <Text style={[styles.text, selected && styles.textSelected]}>{lane.label}</Text>
+            <Text
+              style={[styles.text, selected && styles.textSelected]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
+            >
+              {lane.label}
+            </Text>
           </Pressable>
         );
       })}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", gap: space.sm, paddingHorizontal: space.xl },
-  chip: {
-    minHeight: 40,
-    paddingHorizontal: space.lg,
-    borderRadius: radii.chip,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.line,
+  track: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    marginHorizontal: space.xl,
+    padding: PAD,
+    height: 42,
+    borderRadius: radii.pill,
+    backgroundColor: colors.paperDeep,
+  },
+  trackDisabled: { opacity: 0.7 },
+  thumb: {
+    position: "absolute",
+    top: PAD,
+    bottom: PAD,
+    left: 0,
+    borderRadius: radii.pill,
+    backgroundColor: colors.card,
+    ...shadows.tile,
+  },
+  segment: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 4,
+    borderRadius: radii.pill,
   },
-  chipSelected: { backgroundColor: colors.accent, borderColor: colors.accent },
-  text: { ...type.small, color: colors.muted, fontWeight: "600" },
-  textSelected: { color: colors.onAccent },
-  pressed: { opacity: 0.8 },
+  text: { fontSize: 13, lineHeight: 16, fontWeight: "600", color: colors.ink2 },
+  textSelected: { color: colors.ink, fontWeight: "700" },
 });

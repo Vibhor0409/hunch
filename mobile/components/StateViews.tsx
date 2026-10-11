@@ -1,14 +1,15 @@
 // Loading, error and empty states. Every screen uses these so the copy stays consistent.
+// Loading always carries a label: a bare spinner tells nobody anything.
 
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { colors, hit, radii, space, type } from "@/lib/theme";
 
-export function LoadingView({ label }: { label?: string }) {
+export function LoadingView({ label }: { label: string }) {
   return (
-    <View style={styles.center}>
-      <ActivityIndicator color={colors.accent} />
-      {label ? <Text style={[type.small, styles.gapTop]}>{label}</Text> : null}
+    <View style={styles.center} accessibilityRole="progressbar" accessibilityLabel={label}>
+      <ActivityIndicator color={colors.ink2} />
+      <Text style={[type.small, styles.gapTop]}>{label}</Text>
     </View>
   );
 }
@@ -25,7 +26,7 @@ export function ErrorView({
   return (
     <ScrollView
       contentContainerStyle={styles.center}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRetry} tintColor={colors.accent} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRetry} tintColor={colors.ink2} />}
     >
       <Text style={[type.heading, styles.centerText]}>{message}</Text>
       <Pressable
@@ -34,7 +35,7 @@ export function ErrorView({
         style={({ pressed }) => [styles.retry, pressed && styles.pressed]}
         hitSlop={8}
       >
-        <Text style={styles.retryText}>Retry</Text>
+        <Text style={styles.retryText}>Try again</Text>
       </Pressable>
     </ScrollView>
   );
@@ -63,12 +64,11 @@ const styles = StyleSheet.create({
     marginTop: space.xl,
     minHeight: hit.min,
     paddingHorizontal: space.xxl,
-    borderRadius: radii.button,
-    borderWidth: 1,
-    borderColor: colors.lineStrong,
+    borderRadius: radii.pill,
+    backgroundColor: colors.ink,
     alignItems: "center",
     justifyContent: "center",
   },
-  retryText: { ...type.body, color: colors.paper },
-  pressed: { opacity: 0.7 },
+  retryText: { ...type.body, color: colors.onInk, fontWeight: "700" },
+  pressed: { opacity: 0.75 },
 });
