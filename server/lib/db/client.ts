@@ -3,16 +3,25 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Lane, Mode, Side } from "../types";
 
-/** players table, as supabase/schema.sql defines it. */
+/** JSON as Postgres jsonb holds it (same shape the Supabase codegen uses). */
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
+/** players table, as supabase/schema.sql defines it (wallet columns added by the F8 migration). */
 export type PlayerRow = {
   id: string;
   name: string;
+  /** Play-money balance in dollars, numeric(12,2), default 1000. */
+  balance: number;
+  /** The player's amount per trade, numeric(8,2), 1 to 100, default 1. */
+  stake_per_trade: number;
   created_at: string;
 };
 
 export type PlayerInsert = {
   id?: string;
   name: string;
+  balance?: number;
+  stake_per_trade?: number;
   created_at?: string;
 };
 
@@ -83,6 +92,50 @@ export type LeaderboardViewRow = {
   total_calls: number;
 };
 
+export type WalletTxKind = "stake" | "payout" | "reset";
+
+/** wallet_tx table (F8): one row per balance movement. */
+export type WalletTxRow = {
+  id: string;
+  player_id: string;
+  /** The swipe that caused the movement; null for a reset or after the swipe is deleted. */
+  swipe_id: string | null;
+  kind: WalletTxKind;
+  /** Negative for a stake, positive for a payout or reset. numeric(12,2). */
+  amount: number;
+  balance_after: number;
+  note: string | null;
+  created_at: string;
+};
+
+export type WalletTxInsert = {
+  id?: string;
+  player_id: string;
+  swipe_id?: string | null;
+  kind: WalletTxKind;
+  amount: number;
+  balance_after: number;
+  note?: string | null;
+  created_at?: string;
+};
+
+export type WalletTxUpdate = Partial<WalletTxInsert>;
+
+/** feed_snapshot table: the latest built card list per key (see lib/gemini/snapshot.ts). */
+export type FeedSnapshotRow = {
+  key: string;
+  payload: Json;
+  fetched_at: string;
+};
+
+export type FeedSnapshotInsert = {
+  key: string;
+  payload: Json;
+  fetched_at?: string;
+};
+
+export type FeedSnapshotUpdate = Partial<FeedSnapshotInsert>;
+
 /** Hand-written to match supabase/schema.sql (no codegen). Keep in step with it. */
 export type Database = {
   public: {
@@ -107,6 +160,33 @@ export type Database = {
           },
         ];
       };
+      wallet_tx: {
+        Row: WalletTxRow;
+        Insert: WalletTxInsert;
+        Update: WalletTxUpdate;
+        Relationships: [
+          {
+            foreignKeyName: "wallet_tx_player_id_fkey";
+            columns: ["player_id"];
+            isOneToOne: false;
+            referencedRelation: "players";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "wallet_tx_swipe_id_fkey";
+            columns: ["swipe_id"];
+            isOneToOne: false;
+            referencedRelation: "swipes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      feed_snapshot: {
+        Row: FeedSnapshotRow;
+        Insert: FeedSnapshotInsert;
+        Update: FeedSnapshotUpdate;
+        Relationships: [];
+      };
     };
     Views: {
       leaderboard: {
@@ -114,7 +194,13 @@ export type Database = {
         Relationships: [];
       };
     };
-    Functions: { [_ in never]: never };
+    Functions: {
+      /** update players set balance = balance + p_delta ... returning balance; null when the player is missing. */
+      adjust_balance: {
+        Args: { p_player: string; p_delta: number };
+        Returns: number;
+      };
+    };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
   };

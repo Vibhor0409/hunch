@@ -1,12 +1,14 @@
 import { getPlayer, insertSwipe, paidCountBetween, settledSwipes, swipedSymbols, type NewSwipe } from "@/lib/db";
+import { adjustBalance } from "@/lib/db/wallet";
 import { placeBuy } from "@/lib/gemini/orders";
 import { getQuote } from "@/lib/gemini/quote";
-import { capFor, contractsFor, laDayBounds, laneFor, levelFor, pct, stakeFor } from "@/lib/game";
+import { capFor, contractsFor, laDayBounds, laneFor, levelFor, pct } from "@/lib/game";
 import type { CardQuote, Mode, OrderReceipt, Reveal, Side } from "@/lib/types";
 import { TimeoutError, withTimeout } from "../_lib/async";
 import { describe, errorJson, handle, json, readJsonObject } from "../_lib/http";
 import { statusFrom } from "../_lib/status";
 import { isSide, requireString } from "../_lib/validate";
+import { round2 } from "../_lib/wallet";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,23 +20,27 @@ export const maxDuration = 30;
  * (lib/gemini/quote.ts bounds its own calls; this is the route's safety net.)
  */
 const QUOTE_GUARD_MS = 8_000;
-/** Longest wait for the sandbox order before the swipe is scored as practice. */
+/** Longest wait for the sandbox order; past it the receipt reports an error and the swipe stays wallet-funded. */
 const ORDER_GUARD_MS = 10_000;
 
-const NO_FILL_MESSAGE = "No fill at this price. Scored as practice.";
-const NOT_PLACED_MESSAGE = "Order not placed. Scored as practice.";
-const ORDER_TIMEOUT_MESSAGE = "Gemini timed out. Scored as practice.";
+const CAP_REACHED_MESSAGE = "Daily cap reached. Scored as practice.";
+const NO_BALANCE_MESSAGE = "Not enough balance. Scored as practice.";
+const ORDER_FAILED_MESSAGE = "Order failed on the sandbox.";
+const ORDER_TIMEOUT_MESSAGE = "Gemini timed out.";
 
 /**
  * POST /api/swipe { playerId, eventTicker, instrumentSymbol, side } -> 200 Reveal
  * 400 invalid_body, 404 player_not_found, 409 already_swiped,
  * 410 market_closed, 502 gemini_unavailable (only when the quote cannot be fetched)
  *
- * The swipe flow of docs/ARCHITECTURE.md, with the database reads for steps 1
- * and 3 running alongside the quote so the handler waits for the slower of
- * the two instead of their sum. Responses keep the documented precedence
- * (404, 409, 502, 410); 409 never waits for Gemini, and nothing is written
- * until every check has passed.
+ * The swipe flow of docs/ARCHITECTURE.md with the F8 wallet: a swipe is paid
+ * (wallet-funded) when the player is under the daily cap and the balance
+ * covers the amount per trade; the cost (contracts x price) is debited after
+ * the row is stored, and a tradable card also places the sandbox order. The
+ * database reads for steps 1 and 3 run alongside the quote so the handler
+ * waits for the slower of the two instead of their sum. Responses keep the
+ * documented precedence (404, 409, 502, 410); 409 never waits for Gemini, and
+ * nothing is written until every check has passed.
  */
 export function POST(req: Request): Promise<Response> {
   return handle("swipe", async () => {
@@ -83,35 +89,42 @@ export function POST(req: Request): Promise<Response> {
     const price = side === "yes" ? quote.yesPrice : quote.noPrice;
     if (!Number.isFinite(price) || price <= 0 || price >= 1) return errorJson("market_closed", 410);
 
-    const level = levelFor(settled);
-    const cap = capFor(level);
-    const levelStake = stakeFor(level);
+    // 4. Paid when under the cap and the wallet covers the amount per trade.
+    const cap = capFor(levelFor(settled));
+    const amount = player.stakePerTrade;
+    const underCap = paidUsedToday < cap;
+    const funded = player.balance >= amount;
+    const paid = underCap && funded;
 
-    // 4. Tradable and under the cap: place the order. Only a fill stays paid;
-    // anything else is practice with the receipt kept. A card whose
-    // instrument is not on the sandbox places no order and has no receipt.
     let mode: Mode = "practice";
-    let stake = 0;
     let contracts = 0;
+    let cost = 0;
     let receipt: OrderReceipt | null = null;
     let orderMs = 0;
-    if (quote.tradable !== false && paidUsedToday < cap) {
-      const quantity = contractsFor(levelStake, price);
-      const orderStarted = Date.now();
-      receipt = await placeOrder({ symbol: instrumentSymbol, side, price, quantity });
-      orderMs = Date.now() - orderStarted;
-      if (receipt.status === "filled") {
-        mode = "paid";
-        stake = levelStake;
-        contracts = receipt.contracts > 0 ? receipt.contracts : quantity;
-      } else if (receipt.status === "open" || receipt.status === "cancelled") {
-        receipt = { ...receipt, message: NO_FILL_MESSAGE };
-      } else if (!receipt.message) {
-        receipt = { ...receipt, message: NOT_PLACED_MESSAGE };
+    if (paid) {
+      mode = "paid";
+      contracts = contractsFor(amount, price);
+      cost = round2(contracts * price);
+      // A tradable card also places the real sandbox order. Whatever comes
+      // back (filled, cancelled, error) is kept on the receipt; the wallet
+      // funds the swipe either way. A card not on the sandbox has no receipt.
+      if (quote.tradable !== false) {
+        const orderStarted = Date.now();
+        receipt = await placeOrder({ symbol: instrumentSymbol, side, price, quantity: contracts });
+        orderMs = Date.now() - orderStarted;
       }
+    } else {
+      receipt = {
+        orderId: null,
+        status: "not_placed",
+        symbol: instrumentSymbol,
+        price,
+        contracts: 0,
+        message: underCap ? NO_BALANCE_MESSAGE : CAP_REACHED_MESSAGE,
+      };
     }
 
-    // 5. Always store the swipe, then return the reveal.
+    // 5. Always store the swipe, debit the wallet for a paid one, then reveal.
     const row: NewSwipe = {
       playerId: player.id,
       eventTicker,
@@ -122,7 +135,7 @@ export function POST(req: Request): Promise<Response> {
       side,
       price,
       mode,
-      stake,
+      stake: cost,
       contracts,
       orderId: receipt?.orderId ?? null,
       orderStatus: receipt?.status ?? null,
@@ -131,20 +144,27 @@ export function POST(req: Request): Promise<Response> {
     const inserted = await insertSwipe(row);
     if (!inserted.ok) return errorJson("already_swiped", 409);
 
-    console.log("[api/swipe] quote ms=", quoteMs, "order ms=", orderMs, "mode=", mode);
+    let balanceAfter = player.balance;
+    if (paid && cost > 0) {
+      balanceAfter = await adjustBalance(player.id, -cost, { kind: "stake", swipeId: inserted.swipe.id, note: quote.question });
+    }
 
-    // The new swipe is unsettled, so the level is unchanged; only today's paid count moves.
-    const status = statusFrom(player, settled, paidUsedToday + (mode === "paid" ? 1 : 0));
+    console.log("[api/swipe] quote ms=", quoteMs, "order ms=", orderMs, "mode=", mode, "cost=", cost);
+
+    // The new swipe is unsettled, so the level is unchanged; today's paid count and the balance move.
+    const status = statusFrom({ ...player, balance: balanceAfter }, settled, paidUsedToday + (paid ? 1 : 0));
     const reveal: Reveal = {
       side,
       yesPct: pct(quote.yesPrice),
       noPct: pct(quote.noPrice),
       sidedWithPct: pct(price),
       mode,
-      stake,
+      stake: cost,
       contracts,
-      payoutIfRight: mode === "paid" ? contracts : 0,
+      payoutIfRight: paid ? contracts : 0,
       receipt,
+      cost,
+      balanceAfter,
       status,
     };
     return json(reveal);
@@ -154,7 +174,7 @@ export function POST(req: Request): Promise<Response> {
 /**
  * placeBuy reports API failures as a receipt and never throws for them. This
  * bounds the wait and guards against anything else, so a Gemini problem
- * always ends as a stored practice swipe with an "error" receipt, never a 5xx.
+ * always ends as a stored, wallet-funded swipe with an "error" receipt, never a 5xx.
  */
 async function placeOrder(args: { symbol: string; side: Side; price: number; quantity: number }): Promise<OrderReceipt> {
   try {
@@ -168,7 +188,7 @@ async function placeOrder(args: { symbol: string; side: Side; price: number; qua
       symbol: args.symbol,
       price: args.price,
       contracts: 0,
-      message: timedOut ? ORDER_TIMEOUT_MESSAGE : NOT_PLACED_MESSAGE,
+      message: timedOut ? ORDER_TIMEOUT_MESSAGE : ORDER_FAILED_MESSAGE,
     };
   }
 }

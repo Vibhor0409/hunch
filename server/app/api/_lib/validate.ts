@@ -4,6 +4,10 @@ import type { LaneFilter, Side } from "@/lib/types";
 /** Names: 2 to 20 characters of letters, digits and spaces, after trimming (SPEC F1). */
 const NAME_PATTERN = /^[\p{L}\p{Nd} ]{2,20}$/u;
 
+/** Amount per trade, in dollars (SPEC F8). */
+export const MIN_STAKE = 1;
+export const MAX_STAKE = 100;
+
 /**
  * Every accepted lane value, keyed by the LaneFilter type itself: when a lane
  * is added to or removed from lib/types.ts this object stops compiling until
@@ -35,4 +39,14 @@ export function isSide(value: unknown): value is Side {
 
 export function isLaneFilter(value: unknown): value is LaneFilter {
   return typeof value === "string" && Object.prototype.hasOwnProperty.call(LANE_FILTERS, value);
+}
+
+/**
+ * The amount per trade rounded to 2 decimals when it is a finite number from
+ * 1 to 100 after rounding, otherwise null.
+ */
+export function parseStake(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  const rounded = Math.round(value * 100) / 100;
+  return rounded >= MIN_STAKE && rounded <= MAX_STAKE ? rounded : null;
 }

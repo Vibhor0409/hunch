@@ -1,4 +1,5 @@
 import { settleSwipe, unsettledExpired, type Swipe } from "@/lib/db";
+import { adjustBalance } from "@/lib/db/wallet";
 import { resolveOutcome } from "@/lib/gemini/settlement";
 import { edgeFor } from "@/lib/game";
 import type { Side } from "@/lib/types";
@@ -27,7 +28,8 @@ interface InstrumentGroup {
 /**
  * POST /api/settle -> 200 { settled: number }
  * Selects unsettled swipes whose market expired, resolves each instrument
- * once, and settles every swipe with a known outcome. Safe to call often:
+ * once, settles every swipe with a known outcome and credits paid wins to
+ * the wallet (F8). Safe to call often:
  * already settled rows are skipped by settleSwipe and not counted. Work stops
  * at the time budget and a slow or failing instrument never holds the others.
  */
@@ -79,13 +81,24 @@ async function settleGroup(group: InstrumentGroup, deadline: number): Promise<nu
       const won = swipe.side === outcome;
       const edge = edgeFor(swipe.price, won);
       const payout = won && swipe.mode === "paid" ? swipe.contracts : 0;
+      let row: Awaited<ReturnType<typeof settleSwipe>>;
       try {
-        const row = await settleSwipe(swipe.id, { won, edge, payout });
-        return row ? 1 : 0;
+        row = await settleSwipe(swipe.id, { won, edge, payout });
       } catch (error) {
         console.error(`[api/settle] settleSwipe failed for ${swipe.id}: ${describe(error)}`);
         return 0;
       }
+      if (!row) return 0;
+      // F8: a paid win credits the payout to the wallet. The row is settled
+      // only once (settleSwipe skips settled rows), so the credit happens once.
+      if (row.mode === "paid" && row.won && row.payout > 0) {
+        try {
+          await adjustBalance(row.playerId, row.payout, { kind: "payout", swipeId: row.id, note: row.question });
+        } catch (error) {
+          console.error(`[api/settle] payout credit failed for ${row.id}: ${describe(error)}`);
+        }
+      }
+      return 1;
     }),
   );
   return results.reduce((sum, n) => sum + n, 0);

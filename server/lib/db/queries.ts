@@ -1,19 +1,19 @@
 // Typed database queries for Hunch. Every function returns plain objects in
 // camelCase with numeric columns already converted to JS numbers.
-import type { PostgrestError } from "@supabase/supabase-js";
 import type { SettledRow } from "../game";
 import type { Counters, Lane, Mode, RecentCall, Side } from "../types";
 import { getDb, type LeaderboardViewRow, type PlayerRow, type SwipeInsert, type SwipeRow } from "./client";
-
-// Postgres error codes (https://www.postgresql.org/docs/current/errcodes-appendix.html)
-const UNIQUE_VIOLATION = "23505";
-const INVALID_TEXT_REPRESENTATION = "22P02"; // for example a malformed uuid
+import { fail, INVALID_TEXT_REPRESENTATION, toNumber, toNumberOrNull, UNIQUE_VIOLATION } from "./shared";
 
 // ---------- Shapes ----------
 
 export interface Player {
   id: string;
   name: string;
+  /** Play-money wallet balance in dollars (F8). */
+  balance: number;
+  /** The player's chosen amount per trade, 1 to 100 (F8). */
+  stakePerTrade: number;
   createdAt: string;
 }
 
@@ -95,26 +95,16 @@ export interface LeaderboardEntry {
 export type CreatePlayerResult = { ok: true; player: Player } | { ok: false; error: "name_taken" };
 export type InsertSwipeResult = { ok: true; swipe: Swipe } | { ok: false; error: "already_swiped" };
 
-// ---------- Helpers ----------
-
-/**
- * The one place numeric columns become JS numbers. PostgREST sends Postgres
- * numeric and bigint as JSON numbers, but a string is accepted too so a
- * driver change can never leak strings into game math.
- */
-function toNumber(value: number | string | null | undefined): number {
-  if (value === null || value === undefined) return 0;
-  const n = typeof value === "number" ? value : Number(value);
-  return Number.isFinite(n) ? n : 0;
-}
-
-function toNumberOrNull(value: number | string | null | undefined): number | null {
-  if (value === null || value === undefined) return null;
-  return toNumber(value);
-}
+// ---------- Helpers (numeric conversion and errors live in ./shared) ----------
 
 function toPlayer(row: PlayerRow): Player {
-  return { id: row.id, name: row.name, createdAt: row.created_at };
+  return {
+    id: row.id,
+    name: row.name,
+    balance: toNumber(row.balance),
+    stakePerTrade: toNumber(row.stake_per_trade),
+    createdAt: row.created_at,
+  };
 }
 
 function toSwipe(row: SwipeRow): Swipe {
@@ -207,19 +197,6 @@ export function toRecentCall(swipe: Swipe): RecentCall {
     edge: swipe.edge,
     settledAt: swipe.settledAt,
   };
-}
-
-class DbError extends Error {
-  readonly code: string;
-  constructor(context: string, error: PostgrestError) {
-    super(`${context}: ${error.message} (code ${error.code || "none"})`);
-    this.name = "DbError";
-    this.code = error.code;
-  }
-}
-
-function fail(context: string, error: PostgrestError): never {
-  throw new DbError(context, error);
 }
 
 // ---------- Players ----------

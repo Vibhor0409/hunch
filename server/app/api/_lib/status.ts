@@ -1,11 +1,13 @@
 import { paidCountBetween, settledSwipes, type Player } from "@/lib/db";
-import { capFor, laDayBounds, levelFor, stakeFor, type SettledRow } from "@/lib/game";
+import { capFor, laDayBounds, levelFor, type SettledRow } from "@/lib/game";
 import type { PlayerStatus } from "@/lib/types";
 
 /**
  * PlayerStatus from values already in hand: level from every settled call
- * (levelFor), cap and stake from the level table, paidUsedToday as counted
- * for the current America/Los_Angeles day. Pure, no queries.
+ * (levelFor), the daily cap from the level table, the stake from the
+ * player's own amount per trade (F8), the wallet balance from the player,
+ * and paidUsedToday as counted for the current America/Los_Angeles day.
+ * Pure, no queries.
  */
 export function statusFrom(player: Player, settled: readonly SettledRow[], paidUsedToday: number): PlayerStatus {
   const level = levelFor(settled);
@@ -17,7 +19,9 @@ export function statusFrom(player: Player, settled: readonly SettledRow[], paidU
     dailyCap,
     paidUsedToday,
     paidLeftToday: Math.max(0, dailyCap - paidUsedToday),
-    stake: stakeFor(level),
+    stake: player.stakePerTrade,
+    balance: player.balance,
+    stakePerTrade: player.stakePerTrade,
   };
 }
 

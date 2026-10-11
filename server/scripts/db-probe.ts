@@ -8,17 +8,23 @@ loadEnv({ path: fileURLToPath(new URL("../.env.local", import.meta.url)), quiet:
 
 import { laDayBounds } from "../lib/game";
 import {
+  adjustBalance,
   counters,
   createPlayer,
   getDb,
   getPlayer,
+  getWallet,
   insertSwipe,
   lastSettled,
   leaderboardRows,
+  listWalletTx,
   paidCountBetween,
   recentSwipes,
+  resetWallet,
+  setStakePerTrade,
   settledSwipes,
   settleSwipe,
+  STARTING_BALANCE,
   swipedSymbols,
   unsettledExpired,
 } from "../lib/db";
@@ -132,6 +138,56 @@ async function main(): Promise<void> {
     const totals = await counters();
     expect(totals.players >= 1 && totals.calls >= 1 && totals.geminiOrders >= 1, "counters", JSON.stringify(totals));
     ok("counters", JSON.stringify(totals));
+
+    // ---- Wallet (F8) ----
+    const wallet0 = await getWallet(playerId);
+    expect(wallet0 !== null && wallet0.balance === STARTING_BALANCE && wallet0.stakePerTrade === 1, "wallet.getWallet defaults", JSON.stringify(wallet0));
+    ok("wallet.getWallet", `balance=${wallet0!.balance} stakePerTrade=${wallet0!.stakePerTrade}`);
+
+    const walletMissing = await getWallet("not-a-uuid");
+    expect(walletMissing === null, "wallet.getWallet malformed id", "expected null");
+    ok("wallet.getWallet malformed id", "null");
+
+    const setStake = await setStakePerTrade(playerId, 5.004);
+    expect(setStake.stakePerTrade === 5 && setStake.balance === STARTING_BALANCE, "wallet.setStakePerTrade", JSON.stringify(setStake));
+    ok("wallet.setStakePerTrade", `stakePerTrade=${setStake.stakePerTrade} (5.004 rounded to cents)`);
+
+    const afterStake = await adjustBalance(playerId, -2.5, { kind: "stake", swipeId: swipe.id, note: "probe stake" });
+    expect(afterStake === 997.5, "wallet.adjustBalance stake", `expected 997.5, got ${afterStake}`);
+    ok("wallet.adjustBalance stake", `-2.50 -> balance ${afterStake}`);
+
+    const afterPayout = await adjustBalance(playerId, 7.14, { kind: "payout", swipeId: swipe.id, note: "probe payout" });
+    expect(afterPayout === 1004.64, "wallet.adjustBalance payout", `expected 1004.64, got ${afterPayout}`);
+    ok("wallet.adjustBalance payout", `+7.14 -> balance ${afterPayout}`);
+
+    const afterReset = await resetWallet(playerId);
+    expect(afterReset === STARTING_BALANCE, "wallet.resetWallet", `expected ${STARTING_BALANCE}, got ${afterReset}`);
+    ok("wallet.resetWallet", `-> balance ${afterReset}`);
+
+    const txs = await listWalletTx(playerId);
+    expect(txs.length === 3, "wallet.listWalletTx count", `expected 3, got ${txs.length}`);
+    expect(
+      txs[0].kind === "reset" && txs[0].amount === -4.64 && txs[0].balanceAfter === 1000 && txs[0].note === "Wallet reset to $1,000",
+      "wallet.listWalletTx newest",
+      JSON.stringify(txs[0]),
+    );
+    expect(txs[1].kind === "payout" && txs[1].amount === 7.14 && txs[1].balanceAfter === 1004.64, "wallet.listWalletTx payout", JSON.stringify(txs[1]));
+    expect(txs[2].kind === "stake" && txs[2].amount === -2.5 && txs[2].balanceAfter === 997.5, "wallet.listWalletTx stake", JSON.stringify(txs[2]));
+    expect(txs.every((tx) => typeof tx.amount === "number" && /^\d{4}-\d{2}-\d{2}T.*Z$/.test(tx.createdAt)), "wallet.listWalletTx shapes", "amounts numeric, createdAt ISO Z");
+    ok("wallet.listWalletTx", txs.map((tx) => `${tx.kind} ${tx.amount} -> ${tx.balanceAfter}`).join(" | "));
+
+    const walletPlayer = await getPlayer(playerId);
+    expect(walletPlayer?.balance === STARTING_BALANCE && walletPlayer.stakePerTrade === 5, "wallet.getPlayer fields", JSON.stringify(walletPlayer));
+    ok("wallet.getPlayer", `balance=${walletPlayer!.balance} stakePerTrade=${walletPlayer!.stakePerTrade}`);
+
+    let missingPlayerThrew = false;
+    try {
+      await adjustBalance("00000000-0000-0000-0000-000000000000", 1, { kind: "payout" });
+    } catch {
+      missingPlayerThrew = true;
+    }
+    expect(missingPlayerThrew, "wallet.adjustBalance missing player", "expected a throw, no transaction written");
+    ok("wallet.adjustBalance missing player", "throws");
   } finally {
     await deletePlayer(playerId);
     ok("deletePlayer", `${playerId} removed`);
@@ -141,7 +197,9 @@ async function main(): Promise<void> {
   expect(gone === null, "cascade", "player still present after delete");
   const orphans = await recentSwipes(playerId, 10);
   expect(orphans.length === 0, "cascade", `${orphans.length} swipe(s) survived the player delete`);
-  ok("cascade", "player and swipe gone");
+  const orphanTxs = await listWalletTx(playerId);
+  expect(orphanTxs.length === 0, "cascade", `${orphanTxs.length} wallet transaction(s) survived the player delete`);
+  ok("cascade", "player, swipe and wallet transactions gone");
 
   console.log("DB PROBE PASSED");
 }
