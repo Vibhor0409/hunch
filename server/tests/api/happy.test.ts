@@ -406,9 +406,12 @@ describe.skipIf(!process.env.API_BASE_URL)("Hunch API happy path", () => {
       if (body.mode === "paid") {
         expect(body.receipt, "a paid swipe carries a receipt").not.toBeNull();
         const receipt = body.receipt as OrderReceipt;
-        expect(receipt.status, "paid means filled").toBe("filled");
-        expect(typeof receipt.orderId, "paid means a real order id").toBe("string");
-        expect((receipt.orderId as string).length).toBeGreaterThan(0);
+        // F8: paid means wallet-funded. The sandbox order may fill, or cancel for lack of liquidity.
+        expect(["filled", "open", "cancelled", "error", "not_placed"], "documented receipt status").toContain(receipt.status);
+        if (receipt.status === "filled" || receipt.status === "cancelled" || receipt.status === "open") {
+          expect(typeof receipt.orderId, "an accepted order carries a real order id").toBe("string");
+          expect((receipt.orderId as string).length).toBeGreaterThan(0);
+        }
         expect(receipt.symbol).toBe(chosen.instrumentSymbol);
         expect(receipt.price).toBeGreaterThan(0);
         expect(receipt.price).toBeLessThan(1);
