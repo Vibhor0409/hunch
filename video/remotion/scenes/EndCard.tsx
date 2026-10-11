@@ -1,4 +1,4 @@
-// End card: the Hunch mark, the line, the plain-text credit, the repo URL.
+// End card: the Hunch mark, the line, the plain-text credits, the repo URL.
 import { AbsoluteFill, getRemotionEnvironment, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import type { Scene } from "../script";
 import { colors, fonts } from "../theme";
@@ -8,9 +8,8 @@ export const EndCard = ({ scene, github }: { scene: Scene; github: string }) => 
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const { isRendering } = getRemotionEnvironment();
-  const [tagline = "Call it blind. Earn your limit.", credit = "Built on Gemini Prediction Markets"] = Array.isArray(scene.overlay)
-    ? scene.overlay
-    : [scene.overlay ?? ""];
+  const [tagline = "Call it blind. Earn your limit.", ...credits] = Array.isArray(scene.overlay) ? scene.overlay : [scene.overlay ?? ""];
+  const creditLine = (credits.length ? credits : ["Built on Gemini Prediction Markets"]).join("   \u00b7   ");
 
   const bg = interpolate(frame, [0, Math.round(fps * 0.4)], [0, 1], { extrapolateRight: "clamp" });
   const mark = spring({ frame: frame - Math.round(fps * 0.2), fps, config: { damping: 14, stiffness: 120 } });
@@ -22,7 +21,7 @@ export const EndCard = ({ scene, github }: { scene: Scene; github: string }) => 
   return (
     <AbsoluteFill style={{ background: colors.bg, opacity: bg, alignItems: "center", justifyContent: "center", fontFamily: fonts.sans }}>
       <div style={{ transform: `scale(${interpolate(mark, [0, 1], [0.6, 1])}) rotate(${interpolate(mark, [0, 1], [-20, 0])}deg)`, opacity: mark }}>
-        <HunchMark size={200} color={colors.accent} paper={colors.paper} />
+        <HunchMark size={220} color={colors.accent} bg={colors.bg} />
       </div>
       <div
         style={{
@@ -52,7 +51,7 @@ export const EndCard = ({ scene, github }: { scene: Scene; github: string }) => 
         {tagline}
       </div>
       <div style={{ marginTop: 56, opacity: rest, display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
-        <div style={{ fontSize: 30, fontWeight: 500, color: colors.muted }}>{credit}</div>
+        <div style={{ fontSize: 28, fontWeight: 500, color: colors.muted, whiteSpace: "pre" }}>{creditLine}</div>
         {url ? (
           <div style={{ fontFamily: fonts.mono, fontSize: 30, color: colors.paper }}>{url}</div>
         ) : !isRendering ? (

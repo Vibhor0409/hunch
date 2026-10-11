@@ -1,7 +1,5 @@
-// Me (P0): name, level, Edge total and Recent calls. Settles before it loads.
-// TODO(Phase 4): level bar with progress text and the rule line (testID level-bar).
-// TODO(Phase 4): Edge by category horizontal bars with react-native-svg (testID category-bar).
-// TODO(Phase 4): the insight line from profile.insight.
+// Me: name, Edge total, the level bar, Edge by category, the insight line and Recent calls.
+// Settles before it loads. Sections render only from real profile data.
 
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -9,7 +7,9 @@ import { FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { CategoryBars } from "@/components/CategoryBars";
 import { formatDollars, formatEdge } from "@/components/format";
+import { LevelBar } from "@/components/LevelBar";
 import { usePlayer } from "@/components/PlayerContext";
 import { EmptyView, ErrorView, LoadingView } from "@/components/StateViews";
 import { errorMessage, getProfile, settle } from "@/lib/api";
@@ -98,6 +98,18 @@ export default function MeScreen() {
                 </View>
               </View>
               {notice ? <Text style={styles.notice}>{notice}</Text> : null}
+
+              <LevelBar progress={profile.progress} />
+
+              {profile.progress.settledCalls === 0 ? (
+                <Text style={styles.fillIn}>Settled calls fill this in.</Text>
+              ) : (
+                <>
+                  {profile.categories.length > 0 ? <CategoryBars categories={profile.categories} /> : null}
+                  {profile.insight ? <Text style={styles.insight}>{profile.insight}</Text> : null}
+                </>
+              )}
+
               <Text style={[type.label, styles.sectionLabel]}>Recent calls</Text>
             </View>
           }
@@ -173,6 +185,8 @@ const styles = StyleSheet.create({
   },
   edgeTotal: { ...type.bigNumber, fontSize: 28, lineHeight: 34 },
   notice: { ...type.small, color: colors.loss },
+  fillIn: { ...type.small, color: colors.faint },
+  insight: { ...type.body, color: colors.paper },
   sectionLabel: { marginTop: space.sm },
   call: {
     paddingVertical: space.md,

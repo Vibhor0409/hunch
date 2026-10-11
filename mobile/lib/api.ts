@@ -3,6 +3,7 @@
 // and every failure becomes an ApiError with a short message for the screen.
 
 import type {
+  CardContext,
   Counters,
   LaneFilter,
   LeaderboardRow,
@@ -186,4 +187,10 @@ export function getLeaderboard(): Promise<LeaderboardResponse> {
 export function getProfile(playerId: string): Promise<Profile> {
   const query = new URLSearchParams({ playerId }).toString();
   return request<Profile>(`/api/profile?${query}`);
+}
+
+/** Live context for a card back. The server filters odds out; the app only renders `text`. */
+export function getContext(eventTicker: string, instrumentSymbol: string, playerId: string): Promise<CardContext> {
+  const query = new URLSearchParams({ eventTicker, instrumentSymbol, playerId }).toString();
+  return request<CardContext>(`/api/context?${query}`);
 }

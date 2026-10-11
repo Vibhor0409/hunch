@@ -24,7 +24,11 @@
         "The market had Spain at sixty-one percent.",
         "Your gut never told you that."
       ],
-      "overlay": ["$50 on Argentina", "$50 on a hat trick", "Market: Spain 61%"],
+      "overlay": [
+        "$50 on Argentina",
+        "$50 on a hat trick",
+        "Market: Spain 61%"
+      ],
       "beats": {
         "line1": 0.4,
         "stamp1": 3.3,
@@ -45,7 +49,14 @@
       ],
       "overlay": "Test your gut for a dollar",
       "segments": [
-        { "type": "clip", "clip": "intro", "start": 14, "end": 22, "clipIn": 2, "rate": 1 }
+        {
+          "type": "clip",
+          "clip": "intro",
+          "start": 14,
+          "end": 22,
+          "clipIn": 2,
+          "rate": 1
+        }
       ]
     },
     {
@@ -53,16 +64,23 @@
       "kind": "app",
       "start": 22,
       "end": 47,
-      "voiceover": "Every card is a live market from Gemini's prediction API. You call it before you see the odds. Then Hunch shows you what the market thinks, and what a dollar pays if you're right. Pick how long you want to wait: five minutes, tomorrow, or this week.",
+      "voiceover": "Every card is a live market from Gemini's prediction API. Unsure? Tap for live context from the web. Then call it, before you see the odds. Hunch shows you what the market thinks, and what a dollar pays if you're right.",
       "captions": [
         "Every card is a live market from Gemini's prediction API.",
-        "You call it before you see the odds.",
-        "Then Hunch shows you what the market thinks, and what a dollar pays if you're right.",
-        "Pick how long you want to wait: five minutes, tomorrow, or this week."
+        "Unsure? Tap for live context from the web.",
+        "Then call it, before you see the odds.",
+        "Hunch shows you what the market thinks, and what a dollar pays if you're right."
       ],
       "overlay": "Call it blind. Then see the odds.",
       "segments": [
-        { "type": "clip", "clip": "blind", "start": 22, "end": 47, "clipIn": 2, "rate": 1 }
+        {
+          "type": "clip",
+          "clip": "blind",
+          "start": 22,
+          "end": 47,
+          "clipIn": 2,
+          "rate": 1
+        }
       ]
     },
     {
@@ -77,9 +95,28 @@
       ],
       "overlay": "A real $1 order on every swipe",
       "segments": [
-        { "type": "clip", "clip": "real", "start": 47, "end": 55, "clipIn": 2, "rate": 1 },
-        { "type": "title", "text": "5 minutes later", "start": 55, "end": 57 },
-        { "type": "clip", "clip": "settled", "start": 57, "end": 67, "clipIn": 2, "rate": 1 }
+        {
+          "type": "clip",
+          "clip": "real",
+          "start": 47,
+          "end": 55,
+          "clipIn": 2,
+          "rate": 1
+        },
+        {
+          "type": "title",
+          "text": "5 minutes later",
+          "start": 55,
+          "end": 57
+        },
+        {
+          "type": "clip",
+          "clip": "settled",
+          "start": 57,
+          "end": 67,
+          "clipIn": 2,
+          "rate": 1
+        }
       ]
     },
     {
@@ -96,7 +133,14 @@
       ],
       "overlay": "Lose your edge, lose the level.",
       "segments": [
-        { "type": "clip", "clip": "limit", "start": 67, "end": 92, "clipIn": 2, "rate": 1 }
+        {
+          "type": "clip",
+          "clip": "limit",
+          "start": 67,
+          "end": 92,
+          "clipIn": 2,
+          "rate": 1
+        }
       ]
     },
     {
@@ -109,10 +153,26 @@
         "Since three o'clock, {players} hackers in this room have made {calls} calls on their iPhones,",
         "and {leader} is beating the market by {leaderEdge} points."
       ],
-      "overlay": ["{players} players", "{calls} calls", "{leader} +{leaderEdge} Edge", "built today by one person"],
+      "overlay": [
+        "{players} players",
+        "{calls} calls",
+        "{leader} +{leaderEdge} Edge",
+        "built today by one person"
+      ],
       "segments": [
-        { "type": "clip", "clip": "traction", "start": 92, "end": 105, "clipIn": 2, "rate": 1 },
-        { "type": "diagram", "start": 105, "end": 107 }
+        {
+          "type": "clip",
+          "clip": "traction",
+          "start": 92,
+          "end": 105,
+          "clipIn": 2,
+          "rate": 1
+        },
+        {
+          "type": "diagram",
+          "start": 105,
+          "end": 107
+        }
       ]
     },
     {
@@ -122,7 +182,11 @@
       "end": 115,
       "voiceover": "Hunch. Call it blind. Earn your limit.",
       "captions": [],
-      "overlay": ["Call it blind. Earn your limit.", "Built on Gemini Prediction Markets"]
+      "overlay": [
+        "Call it blind. Earn your limit.",
+        "Built on Gemini Prediction Markets",
+        "Context by Context.dev"
+      ]
     }
   ]
 }

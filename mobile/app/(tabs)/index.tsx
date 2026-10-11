@@ -32,6 +32,7 @@ export default function DeckScreen() {
   const [now, setNow] = useState(() => Date.now());
   const [exhausted, setExhausted] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [flipped, setFlipped] = useState(false);
 
   const topRef = useRef<SwipeCardHandle>(null);
   const requestId = useRef(0);
@@ -50,6 +51,7 @@ export default function DeckScreen() {
     setCards([]);
     setExhausted(false);
     setSheet(null);
+    setFlipped(false);
   }, []);
 
   const onLaneChange = useCallback(
@@ -111,6 +113,7 @@ export default function DeckScreen() {
 
   const removeTop = useCallback((symbol: string) => {
     setCards((current) => current.filter((c) => c.instrumentSymbol !== symbol));
+    setFlipped(false);
   }, []);
 
   const onCommit = useCallback(
@@ -153,7 +156,7 @@ export default function DeckScreen() {
 
   const act = (action: CardAction) => topRef.current?.fling(action);
 
-  const interactive = phase === "ready" && cards.length > 0 && !busy && sheet === null;
+  const interactive = phase === "ready" && cards.length > 0 && !busy && sheet === null && !flipped;
   const visible = cards.slice(0, VISIBLE);
 
   return (
@@ -179,6 +182,7 @@ export default function DeckScreen() {
                   enabled={index === 0 && interactive}
                   onCommit={(side) => onCommit(card, side)}
                   onSkip={() => onSkip(card)}
+                  onFlip={index === 0 ? setFlipped : undefined}
                 />
               ))
               .reverse()
