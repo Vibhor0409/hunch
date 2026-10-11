@@ -68,3 +68,13 @@ export interface CardContext {
 6. Tell **release-engineer** to add `CONTEXT_DEV_API_KEY` (and optionally `CONTEXT_DEV_DAILY_CREDIT_CAP`) to Vercel production env vars, and to include a "Live context by Context.dev" section in the README describing this feature.
 7. Tell **video-producer** to use this voiceover for the `blind` scene and to capture one Context tap in it: "Every card is a live market from Gemini's prediction API. Unsure? Tap for live context from the web. Then call it, before you see the odds. Hunch shows you what the market thinks, and what a dollar pays if you're right."
 8. Tell **qa-verifier** to add checks: the mobile bundle and `mobile/` source never contain `CONTEXT_DEV`; `/api/context` never returns text containing the blocked odds terms; a second request for the same market returns `cached: true`.
+
+## Always-on context (added 4:47 PM, required by the human)
+
+A live check found context on only 3 of 10 cards. The card back must always show something useful. `getCardContext` now resolves in tiers and `CardContext.kind` says which one answered:
+
+1. **Web, exact** (`kind: "web"`): the existing query (question plus "latest news") with the lane's freshness.
+2. **Web, broad** (`kind: "web"`): only when tier 1 picks nothing. Query on the market's subject (event title without clock times, strikes or the option label) plus "news", freshness `last_month`. `description` may stand in when highlights are missing. Medium and high relevance first, low relevance as a last resort. The odds filter and excluded domains still apply.
+3. **Market rules** (`kind: "market"`, free, always available): two or three sentences from Gemini's own event data (description, resolution rule, strike, close time). Never odds or prices. `sourceTitle` "Market rules on Gemini", `sourceUrl` null unless the event data carries a public URL.
+
+Rules: the whole lookup answers within about 7 seconds (tier 1 at most 4.5 s, tier 2 at most 3.5 s; on timeout fall through). When the credit guard trips, skip the web tiers and return tier 3. Web results are cached as before; a web miss is cached (30 minutes) so it is not retried, and tier 3 is rebuilt on each call. `available` is false only when the market itself cannot be found. The app shows "Context by Context.dev" for `web` and "From the market rules on Gemini" for `market`.

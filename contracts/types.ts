@@ -118,6 +118,7 @@ export interface Profile {
 /** Live context for a card back (Context.dev add-on). Never includes odds. */
 export interface CardContext {
   available: boolean;
+  kind: "web" | "market"; // web = live context from Context.dev; market = the market's own rules from Gemini (always available)
   text: string | null;
   sourceTitle: string | null;
   sourceUrl: string | null;
