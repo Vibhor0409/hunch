@@ -1,6 +1,7 @@
 // Typed client for the Hunch API routes. Real calls only, never fixtures.
-// Base URL comes from EXPO_PUBLIC_API_URL. Reads time out after 10 seconds, the
-// swipe after 20, and every failure becomes an ApiError with a short message.
+// Base URL comes from EXPO_PUBLIC_API_URL. Reads time out after 10 seconds, card
+// context after 12, the swipe after 20, and every failure becomes an ApiError with
+// a short message.
 // Callers can pass an AbortSignal to cancel a request they no longer need.
 
 import type {
@@ -18,6 +19,7 @@ import type {
 
 const READ_TIMEOUT_MS = 10_000;
 const SWIPE_TIMEOUT_MS = 20_000;
+const CONTEXT_TIMEOUT_MS = 15_000; // uncached lookups measured at 7 to 11 seconds
 
 export const OFFLINE_MESSAGE = "Can't reach Hunch right now.";
 
@@ -251,8 +253,11 @@ export function resetWallet(playerId: string): Promise<Wallet> {
   return request<Wallet>("/api/wallet/reset", { method: "POST", body: { playerId } });
 }
 
-/** Live context for a card back. The server filters odds out; the app only renders `text`. */
+/**
+ * Context for a card back: live web context, or the market's own rules as a fallback.
+ * The server filters odds out; the app only renders `text`.
+ */
 export function getContext(eventTicker: string, instrumentSymbol: string, playerId: string): Promise<CardContext> {
   const query = new URLSearchParams({ eventTicker, instrumentSymbol, playerId }).toString();
-  return request<CardContext>(`/api/context?${query}`);
+  return request<CardContext>(`/api/context?${query}`, { method: "GET", timeoutMs: CONTEXT_TIMEOUT_MS });
 }

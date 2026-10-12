@@ -20,8 +20,6 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withDelay,
-  withRepeat,
-  withSequence,
   withSpring,
   withTiming,
 } from "react-native-reanimated";
@@ -34,7 +32,7 @@ import {
   formatPct,
   formatPrice,
 } from "@/components/format";
-import { HunchMark } from "@/components/HunchMark";
+import { PulsingMark } from "@/components/PulsingMark";
 import { Stamp } from "@/components/Stamp";
 import {
   colors,
@@ -206,32 +204,13 @@ export const RevealSheet = memo(function RevealSheet({
 
 /** The card is already committed. The mark breathes until the market answers. */
 function PendingBody() {
-  const pulse = useSharedValue(0);
-  useEffect(() => {
-    pulse.set(
-      withRepeat(
-        withSequence(
-          withTiming(1, { duration: 650, easing: Easing.inOut(Easing.quad) }),
-          withTiming(0, { duration: 650, easing: Easing.inOut(Easing.quad) }),
-        ),
-        -1,
-        false,
-      ),
-    );
-  }, [pulse]);
-  const markStyle = useAnimatedStyle(() => ({
-    opacity: 0.7 + 0.3 * pulse.get(),
-    transform: [{ scale: 0.94 + 0.1 * pulse.get() }],
-  }));
   return (
     <View
       style={styles.pending}
       accessibilityRole="progressbar"
       accessibilityLabel="Checking the market"
     >
-      <Animated.View style={markStyle}>
-        <HunchMark size={72} background={colors.card} />
-      </Animated.View>
+      <PulsingMark size={72} background={colors.card} />
       <Text style={styles.pendingTitle}>Checking the market</Text>
       <Text style={styles.pendingHint}>
         Reading the live odds on Gemini. This takes a second or two.

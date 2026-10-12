@@ -2,12 +2,13 @@
 // near its bottom edge. YES and NO stamps land as the card travels, SKIP as it rises.
 // Release past a distance or a fling velocity commits; otherwise it springs back.
 // Cards behind read the top card's progress and slide forward as it leaves.
-// A tap on Context flips the slip to its back: live context from the web, never odds.
+// A tap on Context flips the slip to its back: live context from the web, or the
+// market's own rules when the web has nothing. Never odds.
 
 import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
 import { forwardRef, memo, useImperativeHandle, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Easing,
@@ -26,6 +27,7 @@ import { scheduleOnRN } from "react-native-worklets";
 import { CategoryChip } from "@/components/Category";
 import { closesSoon, formatCloses } from "@/components/format";
 import { usePlayer } from "@/components/PlayerContext";
+import { PulsingMark } from "@/components/PulsingMark";
 import { Stamp } from "@/components/Stamp";
 import { getContext } from "@/lib/api";
 import { colors, credit, hit, motion, radii, shadows, space, springs, swipe, type } from "@/lib/theme";
@@ -56,6 +58,24 @@ type ContextState = { kind: "idle" } | { kind: "loading" } | { kind: "ready"; da
 
 const NOTCH = 12;
 const NO_CONTEXT = "No fresh context for this one. Trust your gut.";
+const MARKET_SOURCE = "Market rules on Gemini";
+// Web context runs to about 220 characters and keeps the large type. Longer passages
+// (market rules can run to three sentences) step down a size, and the body scrolls.
+const LONG_CONTEXT_CHARS = 240;
+
+/** The context worth showing, or null when the lookup failed or came back empty. */
+function shownContext(state: ContextState): CardContext | null {
+  if (state.kind !== "ready") return null;
+  const { available, text } = state.data;
+  return available && typeof text === "string" && text.trim().length > 0 ? state.data : null;
+}
+
+/** Only a real http(s) address gets a "Read more" link. */
+function linkOf(url: string | null | undefined): string | null {
+  if (typeof url !== "string") return null;
+  const trimmed = url.trim();
+  return /^https?:\/\//i.test(trimmed) ? trimmed : null;
+}
 
 function lightHaptic() {
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -135,12 +155,18 @@ export const SwipeCard = memo(
         .catch(() => setContext({ kind: "error" }));
     };
 
+    const retryContext = () => {
+      Haptics.selectionAsync().catch(() => {});
+      fetchContext();
+    };
+
     const showBack = () => {
       if (!enabled || flipped) return;
       Haptics.selectionAsync().catch(() => {});
       setFlipped(true);
       onFlip?.(true);
       flip.set(withTiming(1, { duration: motion.flipMs, easing: Easing.inOut(Easing.cubic) }));
+      // A good answer stays cached on the card. A failed request is asked again.
       if (context.kind === "idle" || context.kind === "error") fetchContext();
     };
 
@@ -245,6 +271,12 @@ export const SwipeCard = memo(
       return { opacity: p, transform: [{ scale: 1.2 - 0.2 * p }] };
     });
 
+    // What the back says depends on where the context came from. A missing kind reads as web.
+    const shown = shownContext(context);
+    const fromMarket = shown?.kind === "market";
+    const backTitle = shown ? (fromMarket ? "About this market" : "Live context") : "Context";
+    const backCredit = shown ? (fromMarket ? credit.poweredBy : credit.context) : "";
+
     const closes = formatCloses(card.expiresAt, now);
     const urgent = closesSoon(card.expiresAt, now);
 
@@ -330,18 +362,20 @@ export const SwipeCard = memo(
             pointerEvents={flipped ? "auto" : "none"}
           >
             <View style={styles.top}>
-              <Text style={styles.backTitle}>Context</Text>
+              <Text style={styles.backTitle}>{backTitle}</Text>
               <View style={styles.blindTag}>
                 <Text style={styles.blindTagText}>Odds stay hidden</Text>
               </View>
             </View>
 
             <View style={styles.backBody}>
-              <ContextBody state={context} />
+              <ContextBody state={context} shown={shown} onRetry={retryContext} />
             </View>
 
             <View style={styles.backFooter}>
-              <Text style={styles.creditText}>{credit.context}</Text>
+              <Text style={styles.creditText} numberOfLines={2}>
+                {backCredit}
+              </Text>
               <Pressable
                 testID="btn-context-back"
                 accessibilityRole="button"
@@ -359,45 +393,73 @@ export const SwipeCard = memo(
   }),
 );
 
-function ContextBody({ state }: { state: ContextState }) {
-  if (state.kind === "idle" || state.kind === "loading") {
+function ContextBody({
+  state,
+  shown,
+  onRetry,
+}: {
+  state: ContextState;
+  shown: CardContext | null;
+  onRetry: () => void;
+}) {
+  // Nothing to draw until the first flip asks for context.
+  if (state.kind === "idle") return null;
+
+  if (state.kind === "loading") {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator color={colors.ink2} />
-        <Text style={type.small}>Looking it up</Text>
+      <View style={styles.centered} accessibilityRole="progressbar" accessibilityLabel="Finding context">
+        <PulsingMark size={56} background={colors.card} />
+        <Text style={styles.loadingTitle}>Finding context</Text>
+        <Text style={styles.loadingHint}>This can take a few seconds.</Text>
       </View>
     );
   }
-  if (state.kind === "error" || !state.data.available || !state.data.text) {
-    return <Text style={styles.contextText}>{NO_CONTEXT}</Text>;
+
+  // The request failed, or the server had nothing for this market.
+  if (!shown) {
+    return (
+      <View style={styles.contextGap}>
+        <Text style={styles.contextText}>{NO_CONTEXT}</Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onRetry}
+          hitSlop={6}
+          style={({ pressed }) => [styles.textButton, styles.textButtonStart, pressed && styles.pressed]}
+        >
+          <Text style={styles.textButtonText}>Try again</Text>
+        </Pressable>
+      </View>
+    );
   }
-  const { text, sourceDomain, sourceTitle, sourceUrl } = state.data;
-  const source = sourceDomain ?? sourceTitle;
+
+  const text = (shown.text ?? "").trim();
+  const source =
+    shown.kind === "market" ? shown.sourceTitle?.trim() || MARKET_SOURCE : (shown.sourceDomain ?? shown.sourceTitle);
+  const link = linkOf(shown.sourceUrl);
+
   return (
-    <View style={styles.contextGap}>
-      <Text style={styles.contextText} numberOfLines={6}>
-        {text}
-      </Text>
+    <ScrollView contentContainerStyle={styles.contextScroll}>
+      <Text style={[styles.contextText, text.length > LONG_CONTEXT_CHARS && styles.contextTextLong]}>{text}</Text>
       <View style={styles.sourceRow}>
         {source ? (
           <Text style={styles.source} numberOfLines={1}>
             {source}
           </Text>
         ) : null}
-        {sourceUrl ? (
+        {link ? (
           <Pressable
             accessibilityRole="link"
             onPress={() => {
-              WebBrowser.openBrowserAsync(sourceUrl).catch(() => {});
+              WebBrowser.openBrowserAsync(link).catch(() => {});
             }}
             hitSlop={6}
-            style={({ pressed }) => [styles.readMore, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.textButton, pressed && styles.pressed]}
           >
-            <Text style={styles.readMoreText}>Read more</Text>
+            <Text style={styles.textButtonText}>Read more</Text>
           </Pressable>
         ) : null}
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -504,21 +566,29 @@ const styles = StyleSheet.create({
   blindTagText: { ...type.caption, color: colors.ink2 },
   backBody: { flex: 1, justifyContent: "center", paddingHorizontal: space.xl, paddingVertical: space.lg },
   centered: { alignItems: "center", gap: space.md },
+  loadingTitle: { ...type.heading, textAlign: "center" },
+  loadingHint: { ...type.small, textAlign: "center" },
   contextGap: { gap: space.md },
+  // Short passages center in the card; long ones scroll, so nothing is ever cut off.
+  contextScroll: { flexGrow: 1, justifyContent: "center", gap: space.md },
   contextText: { fontSize: 21, lineHeight: 29, fontWeight: "600", letterSpacing: -0.3, color: colors.ink },
+  contextTextLong: { fontSize: 17, lineHeight: 25, fontWeight: "500", letterSpacing: -0.1 },
   sourceRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.md },
   source: { ...type.small, flexShrink: 1 },
-  readMore: { minHeight: hit.min, justifyContent: "center" },
-  readMoreText: { ...type.body, color: colors.accentDeep, fontWeight: "700" },
+  textButton: { minHeight: hit.min, justifyContent: "center" },
+  textButtonStart: { alignSelf: "flex-start" },
+  textButtonText: { ...type.body, color: colors.accentDeep, fontWeight: "700" },
   backFooter: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: space.md,
     paddingHorizontal: space.xl,
     paddingBottom: space.lg,
     paddingTop: space.sm,
   },
-  creditText: { ...type.caption, color: colors.ink3 },
+  // Takes the free width, so Back stays on the right even before a credit is known.
+  creditText: { ...type.caption, color: colors.ink3, flex: 1 },
   backButton: {
     minHeight: hit.min,
     minWidth: 96,
