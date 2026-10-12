@@ -210,6 +210,8 @@ export interface SwipeRequest {
   eventTicker: string;
   instrumentSymbol: string;
   side: Side;
+  /** The session toggle. "practice" asks for a practice swipe; left out, the server treats it as live. */
+  mode?: "practice" | "live";
 }
 
 export function swipe(body: SwipeRequest): Promise<Reveal> {

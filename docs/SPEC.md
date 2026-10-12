@@ -84,6 +84,12 @@ Approved add-on for the Context.dev bonus track. Full spec in `docs/CONTEXT_DEV.
 - Settlement credits payout = contracts x $1 on a win. Every movement is a wallet transaction shown on the Wallet screen (`GET /api/wallet`), newest first.
 - The level table's stake column becomes the default amount for new players; the player's setting overrides it.
 
+## P1 (added 5:45 PM): F9. Practice or Live session
+
+- A two-way switch, Practice and Live, sits at the top of the Deck and in Settings. The choice is kept on the device (`hunch.sessionMode`, default Live) and sent with every swipe as the optional `mode` field of `POST /api/swipe`.
+- Live is the F8 behavior: wallet-funded, with a Gemini sandbox order on tradable markets. Practice forces a practice call: no order, no wallet movement, and the reveal says "Practice session. Scores Edge only." Calls in both sessions score Edge.
+- A missing or unknown `mode` means Live, so older app builds are unaffected.
+
 ## Out of scope
 
 Web UI of any kind, App Store or TestFlight builds today, push notifications, LLM rewrites, streaks, WebSockets, auth beyond names, real money, redeemable coins (the wallet is play money).

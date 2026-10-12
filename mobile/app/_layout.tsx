@@ -10,6 +10,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { PlayerContext } from "@/components/PlayerContext";
+import { SessionModeProvider } from "@/components/SessionMode";
 import { settle } from "@/lib/api";
 import { getPlayerId } from "@/lib/storage";
 import { colors } from "@/lib/theme";
@@ -91,6 +92,7 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <ThemeProvider value={navTheme}>
             <PlayerContext.Provider value={value}>
+              <SessionModeProvider>
               <StatusBar style="dark" />
               {playerId === undefined ? (
                 <View style={styles.root} />
@@ -105,6 +107,7 @@ export default function RootLayout() {
                   </Stack.Protected>
                 </Stack>
               )}
+              </SessionModeProvider>
             </PlayerContext.Provider>
           </ThemeProvider>
         </SafeAreaProvider>

@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import sample from "../fixtures/context-search.json";
 import { EXCLUDED_DOMAINS } from "../../lib/context/client";
 import {
+  MAX_LINE_LENGTH,
   MAX_TEXT_LENGTH,
   domainOf,
   mentionsOdds,
+  oneLine,
+  oneSentence,
   pickContext,
   proseChunks,
   splitSentences,
@@ -255,6 +258,89 @@ describe("pickContext on the saved sample with the broad options", () => {
     expect(mentionsOdds(picked!.text)).toBe(false);
     expect(sample.results.map((r) => r.url)).toContain(picked!.sourceUrl);
     expect(EXCLUDED_DOMAINS).not.toContain(picked!.sourceDomain);
+  });
+});
+
+describe("the one-line rule", () => {
+  const s1 = "The central bank held its main rate at 4.5% on Thursday, as most economists had expected."; // 90
+  const s2 = "Officials said inflation is cooling but still above target, and they gave no date for a cut."; // 93
+  const long = `The council said that ${"the plan for the old harbor ".repeat(8)}is on hold.`;
+
+  it("keeps the first qualifying sentence alone, though two would fit", () => {
+    expect(MAX_LINE_LENGTH).toBe(180);
+    expect(`${s1} ${s2}`.length).toBeLessThanOrEqual(MAX_TEXT_LENGTH);
+    expect(oneSentence([s1, s2])).toBe(s1);
+    expect(pickContext([result([`${s1} ${s2}`])])?.text).toBe(s1);
+    expect(pickContext([result(null, { description: `${s1} ${s2}` })], { allowDescription: true })?.text).toBe(s1);
+  });
+
+  it("does not let a fragment, an odds sentence or a cut-off piece be the line", () => {
+    expect(oneSentence(["Mostly cloudy.", "Hot.", "High 91F.", s1])).toBe(s1);
+    expect(oneSentence([ODDS, s2])).toBe(s2);
+    expect(oneSentence(["and the vote was close.", "The committee will meet again on", s1])).toBe(s1);
+    expect(oneSentence(["Mostly cloudy.", "Hot."])).toBeNull();
+    expect(oneSentence([ODDS])).toBeNull();
+    expect(oneSentence([])).toBeNull();
+    expect(pickContext([result(["Mostly cloudy. Hot. High 91F."]), result([RAIN], { url: "https://weather.example.com/" })])?.text).toBe(RAIN);
+  });
+
+  it("handles a sentence over the limit as before: a later one that fits, else a clip at a word", () => {
+    expect(long.length).toBeGreaterThan(MAX_LINE_LENGTH);
+    expect(oneSentence([long, s2])).toBe(s2);
+    const clipped = oneSentence([long]);
+    expect(clipped).not.toBeNull();
+    expect(clipped!.length).toBeLessThanOrEqual(MAX_LINE_LENGTH);
+    expect(clipped!.startsWith("The council said that the plan for the old harbor")).toBe(true);
+    expect(clipped!.endsWith("...")).toBe(true);
+    expect(pickContext([result([long])])?.text).toBe(clipped);
+  });
+
+  it("gives every pick one sentence of at most 180 characters", () => {
+    const between = `${"The harbor plan is on hold for the year and ".repeat(4)}the vote is next.`; // over 180, under 220
+    expect(between.length).toBeGreaterThan(MAX_LINE_LENGTH);
+    expect(between.length).toBeLessThanOrEqual(MAX_TEXT_LENGTH);
+    for (const passage of [`${s1} ${s2}`, `${long} ${s2}`, long, between, TRADING_ECONOMICS_PROSE, MINING_WITH_ODDS_WORD]) {
+      const text = pickContext([result([passage])])?.text;
+      expect(text).toBeDefined();
+      expect(text!.length).toBeLessThanOrEqual(MAX_LINE_LENGTH);
+      expect(splitSentences(text!)).toHaveLength(1);
+      expect(mentionsOdds(text!)).toBe(false);
+    }
+  });
+});
+
+describe("oneLine on stored text", () => {
+  it("reduces a line stored before the rule to its first qualifying sentence", () => {
+    expect(oneLine(`${MATCH} ${RAIN}`)).toBe(MATCH);
+    // A real stored line. The two fragments go; "91F." stays with what follows, because the
+    // splitter reads a capital letter before a period as an initial.
+    expect(oneLine("Mostly cloudy. Hot. High 91F. Winds SSE at 5 to 10 mph.")).toBe("High 91F. Winds SSE at 5 to 10 mph.");
+    expect(oneLine(`  ${MATCH}\n${RAIN}  `)).toBe(MATCH);
+  });
+
+  it("leaves a line that already follows the rule unchanged", () => {
+    for (const line of [MATCH, RAIN, oneSentence([`The council said that ${"the plan for the old harbor ".repeat(8)}is on hold.`])!]) {
+      expect(oneLine(line)).toBe(line);
+      expect(oneLine(oneLine(line))).toBe(line);
+    }
+  });
+
+  it("re-clips a stored line that was clipped at the old 220 characters", () => {
+    const stored = trimToSentences([`The council said that ${"the plan for the old harbor ".repeat(10)}is on hold.`])!;
+    expect(stored.length).toBeGreaterThan(MAX_LINE_LENGTH);
+    expect(stored.length).toBeLessThanOrEqual(MAX_TEXT_LENGTH);
+    const line = oneLine(stored);
+    expect(line.length).toBeLessThanOrEqual(MAX_LINE_LENGTH);
+    expect(line.endsWith("...")).toBe(true);
+    expect(oneLine(line)).toBe(line);
+  });
+
+  it("keeps text that has no qualifying sentence rather than returning nothing", () => {
+    expect(oneLine("Mostly cloudy. Hot.")).toBe("Mostly cloudy. Hot.");
+    expect(oneLine("no punctuation here")).toBe("no punctuation here");
+    const run = "word ".repeat(60).trim();
+    expect(oneLine(run).length).toBeLessThanOrEqual(MAX_LINE_LENGTH);
+    expect(oneLine("")).toBe("");
   });
 });
 

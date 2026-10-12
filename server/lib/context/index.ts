@@ -4,6 +4,8 @@
 //   1. web, exact: the question plus "latest news", the lane's freshness
 //   2. web, broad: the market's subject plus "news", the last month
 //   3. market rules: Gemini's own event data, free and always there
+// Crypto price cards are answered before those by tier 0 (price.ts): the asset's
+// spot move over the past 2 hours, kind "market". Every answer is one line.
 import { expiresAtOf, laneOf, questionFor } from "../gemini/cards";
 import { getEventOrNull, getPublicGemini, type GeminiContract, type GeminiEnv, type GeminiEvent } from "../gemini/client";
 import { getQuote } from "../gemini/quote";
@@ -25,14 +27,16 @@ import {
 } from "./client";
 import { guardAllows, ttlFor, type UsageSnapshot } from "./guard";
 import { MARKET_SOURCE_TITLE, marketContext, type MarketContext } from "./market";
-import { pickContext, type PickOptions, type PickedContext } from "./pick";
+import { oneLine, pickContext, type PickOptions, type PickedContext } from "./pick";
+import { priceContext } from "./price";
 import { cacheKeyFor, laDayOf, readCachedContext, readUsage, recordUsage, writeCachedContext } from "./store";
 import { subjectFor } from "./subject";
 
 export { ContextDevError, EXCLUDED_DOMAINS, broadQueryFor, freshnessFor, hasContextKey, queryFor, runUsage, searchContext } from "./client";
 export * from "./guard";
 export { MARKET_SOURCE_TITLE, MAX_MARKET_TEXT_LENGTH, marketContext, type MarketContext } from "./market";
-export { MAX_TEXT_LENGTH, mentionsOdds, pickContext, type PickOptions, type PickedContext } from "./pick";
+export { MAX_LINE_LENGTH, MAX_TEXT_LENGTH, mentionsOdds, oneLine, pickContext, type PickOptions, type PickedContext } from "./pick";
+export { PRICE_SOURCE_TITLE, priceAssetFor, priceContext } from "./price";
 export { cacheKeyFor, clearCachedMisses, laDayOf, readUsage } from "./store";
 export { subjectFor } from "./subject";
 
@@ -46,7 +50,8 @@ const DEALT_GRACE_MS = 250;
 const MARKET_MEMO_MS = 60_000;
 const MARKET_MEMO_LIMIT = 300;
 
-export type ContextTier = 1 | 2 | 3;
+/** 0 is the spot price line of a crypto price card; 1 to 3 are the tiers above. */
+export type ContextTier = 0 | 1 | 2 | 3;
 
 /** A card context plus how it was reached, for the log line and the smoke script. */
 export interface ContextLookup {
@@ -291,6 +296,10 @@ async function resolve(eventTicker: string, instrumentSymbol: string, started: n
   if (!market) return { context: unavailableContext(), tier: 3, credits: 0, searches: 0 };
   const { card, event, contract } = market;
 
+  // Tier 0, crypto price cards only. Null for every other card and on any failure, and then nothing below changes.
+  const spot = await priceContext(card.category, eventTicker, event?.series).catch(() => null);
+  if (spot) return { context: { available: true, kind: "market", ...spot }, tier: 0, credits: 0, searches: 0 };
+
   let outcome = NO_WEB;
   if (market.searchable) {
     try {
@@ -300,7 +309,9 @@ async function resolve(eventTicker: string, instrumentSymbol: string, started: n
     }
   }
   if (outcome.web) {
-    return { context: { available: true, kind: "web", ...outcome.web, cached: outcome.cached }, tier: outcome.tier, credits: outcome.credits, searches: outcome.searches };
+    // One line: a fresh pick already is; a line stored before the rule may hold up to three sentences.
+    const web = { ...outcome.web, text: outcome.web.text === null ? null : oneLine(outcome.web.text) };
+    return { context: { available: true, kind: "web", ...web, cached: outcome.cached }, tier: outcome.tier, credits: outcome.credits, searches: outcome.searches };
   }
   const rules = rulesFor(event, contract, card, new Date());
   return { context: { available: true, kind: "market", ...rules, cached: outcome.cached }, tier: 3, credits: outcome.credits, searches: outcome.searches };
@@ -310,6 +321,8 @@ async function resolve(eventTicker: string, instrumentSymbol: string, started: n
  * Context for one card, with the tier that answered. Never throws.
  * 1. The card as dealt and one Gemini event lookup (3 s), in parallel.
  *    `available: false` only when neither knows the market.
+ *    A crypto price card is then answered by tier 0 when the spot candles
+ *    answer within 2.5 s; otherwise the steps below run as for any card.
  * 2. card_context: a stored web line is returned with cached: true; a stored
  *    miss returns tier 3 at once, also with cached: true.
  * 3. No key, or the credit guard tripped: the web tiers are skipped.

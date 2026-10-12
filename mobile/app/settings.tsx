@@ -10,6 +10,7 @@ import Svg, { Path } from "react-native-svg";
 import { BrandStrip } from "@/components/BrandStrip";
 import { formatInt, formatMoney, formatSignedMoney, formatWhen } from "@/components/format";
 import { usePlayer } from "@/components/PlayerContext";
+import { SessionToggle } from "@/components/SessionMode";
 import { EmptyView, ErrorView, LoadingView } from "@/components/StateViews";
 import { errorMessage, getWallet, isAbort, resetWallet, setStakePerTrade } from "@/lib/api";
 import { colors, hit, radii, shadows, space, type } from "@/lib/theme";
@@ -118,6 +119,11 @@ export default function SettingsScreen() {
                   {formatMoney(wallet.balance)}
                 </Text>
                 <Text style={styles.walletNote}>Play money for the demo. Not real, not redeemable.</Text>
+              </View>
+
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Session</Text>
+                <SessionToggle />
               </View>
 
               <StakePicker playerId={playerId} current={wallet.stakePerTrade} onSaved={onStakeSaved} />

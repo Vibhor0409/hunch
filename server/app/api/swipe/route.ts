@@ -8,7 +8,7 @@ import { TimeoutError, withTimeout } from "../_lib/async";
 import { describe, errorJson, handle, json, readJsonObject } from "../_lib/http";
 import { revealPcts } from "../_lib/odds";
 import { statusFrom } from "../_lib/status";
-import { isSide, requireString } from "../_lib/validate";
+import { isSide, requireString, sessionModeOf } from "../_lib/validate";
 import { round2 } from "../_lib/wallet";
 
 export const runtime = "nodejs";
@@ -26,11 +26,12 @@ const ORDER_GUARD_MS = 10_000;
 
 const CAP_REACHED_MESSAGE = "Daily cap reached. Scored as practice.";
 const NO_BALANCE_MESSAGE = "Not enough balance. Scored as practice.";
+const PRACTICE_SESSION_MESSAGE = "Practice session. Scores Edge only.";
 const ORDER_FAILED_MESSAGE = "Order failed on the sandbox.";
 const ORDER_TIMEOUT_MESSAGE = "Gemini timed out.";
 
 /**
- * POST /api/swipe { playerId, eventTicker, instrumentSymbol, side } -> 200 Reveal
+ * POST /api/swipe { playerId, eventTicker, instrumentSymbol, side, mode? } -> 200 Reveal
  * 400 invalid_body, 404 player_not_found, 409 already_swiped,
  * 410 market_closed, 502 gemini_unavailable (only when the quote cannot be fetched)
  *
@@ -42,6 +43,10 @@ const ORDER_TIMEOUT_MESSAGE = "Gemini timed out.";
  * waits for the slower of the two instead of their sum. Responses keep the
  * documented precedence (404, 409, 502, 410); 409 never waits for Gemini, and
  * nothing is written until every check has passed.
+ *
+ * Optional `mode` ("practice" | "live", the app's session toggle): "practice"
+ * forces a practice swipe (no order, no wallet debit, not counted against the
+ * daily cap). Missing or anything else means "live", the flow described above.
  */
 export function POST(req: Request): Promise<Response> {
   return handle("swipe", async () => {
@@ -52,6 +57,7 @@ export function POST(req: Request): Promise<Response> {
     const instrumentSymbol = requireString(body?.instrumentSymbol);
     const side = body?.side;
     if (!playerId || !eventTicker || !instrumentSymbol || !isSide(side)) return errorJson("invalid_body", 400);
+    const session = sessionModeOf(body?.mode);
 
     const player = await getPlayer(playerId);
     if (!player) return errorJson("player_not_found", 404);
@@ -90,12 +96,13 @@ export function POST(req: Request): Promise<Response> {
     const price = side === "yes" ? quote.yesPrice : quote.noPrice;
     if (!Number.isFinite(price) || price <= 0 || price >= 1) return errorJson("market_closed", 410);
 
-    // 4. Paid when under the cap and the wallet covers the amount per trade.
+    // 4. Paid when under the cap and the wallet covers the amount per trade
+    // (live session only; a practice session is never paid).
     const cap = capFor(levelFor(settled));
     const amount = player.stakePerTrade;
     const underCap = paidUsedToday < cap;
     const funded = player.balance >= amount;
-    const paid = underCap && funded;
+    const paid = session === "live" && underCap && funded;
 
     let mode: Mode = "practice";
     let contracts = 0;
@@ -121,7 +128,7 @@ export function POST(req: Request): Promise<Response> {
         symbol: instrumentSymbol,
         price,
         contracts: 0,
-        message: underCap ? NO_BALANCE_MESSAGE : CAP_REACHED_MESSAGE,
+        message: session === "practice" ? PRACTICE_SESSION_MESSAGE : underCap ? NO_BALANCE_MESSAGE : CAP_REACHED_MESSAGE,
       };
     }
 
@@ -150,7 +157,7 @@ export function POST(req: Request): Promise<Response> {
       balanceAfter = await adjustBalance(player.id, -cost, { kind: "stake", swipeId: inserted.swipe.id, note: quote.question });
     }
 
-    console.log("[api/swipe] quote ms=", quoteMs, "order ms=", orderMs, "mode=", mode, "cost=", cost);
+    console.log("[api/swipe] quote ms=", quoteMs, "order ms=", orderMs, "mode=", mode, "cost=", cost, "session=", session);
 
     // The new swipe is unsettled, so the level is unchanged; today's paid count and the balance move.
     const status = statusFrom({ ...player, balance: balanceAfter }, settled, paidUsedToday + (paid ? 1 : 0));

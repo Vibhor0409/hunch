@@ -8,6 +8,7 @@ import {
   MAX_MARKET_TEXT_LENGTH,
   closeSentence,
   marketContext,
+  marketSentences,
   newYorkTime,
   plainText,
   richText,
@@ -160,11 +161,20 @@ function sentenceCount(text: string): number {
   return text.split(/(?<=[.!?]["”]?)\s+(?=[A-Z])/).length;
 }
 
+/**
+ * The longer form the one-line text is the head of: what resolves Yes, the
+ * source when the rules name one, and the close time, as one string.
+ */
+function longForm(e: GeminiEvent | null, c: GeminiContract | null, card: MarketCard, now: Date = NOW): string {
+  return marketSentences(e, c, card, now).join(" ");
+}
+
 describe("marketContext from real events", () => {
-  it("says what resolves Yes, names the source and gives the close time (crypto ladder)", () => {
+  it("says what resolves Yes in one line; the longer form adds the source and the close time (crypto ladder)", () => {
     const c = xrpLadder.contracts![0]!;
     const ctx = marketContext(xrpLadder, c, cardOf(xrpLadder, c), NOW);
-    expect(ctx.text).toBe(
+    expect(ctx.text).toBe("If the price of XRP is $1.36 or above on October 12, 2026 at 5pm ET, this market will resolve to Yes.");
+    expect(longForm(xrpLadder, c, cardOf(xrpLadder, c))).toBe(
       "If the price of XRP is $1.36 or above on October 12, 2026 at 5pm ET, this market will resolve to Yes. Outcome verified against the LS-LRRR-XRPUSD index. It closes on October 12, 2026 at 5:00 PM ET.",
     );
     expect(ctx).toMatchObject({ sourceTitle: "Market rules on Gemini", sourceDomain: null, sourceUrl: XRP_TERMS });
@@ -175,13 +185,16 @@ describe("marketContext from real events", () => {
   it("splits rules that end sentences with ET, Yes and No (sports game)", () => {
     const c = nflGame.contracts![0]!;
     const ctx = marketContext(nflGame, c, cardOf(nflGame, c), NOW);
-    expect(ctx.text).toBe(
+    expect(ctx.text).toBe("This market resolves to Yes if Denver wins the Pro Football game between Denver and Los Angeles C scheduled for October 11, 2026 at 4:05 PM ET.");
+    const long = longForm(nflGame, c, cardOf(nflGame, c));
+    expect(long).toBe(
       "This market resolves to Yes if Denver wins the Pro Football game between Denver and Los Angeles C scheduled for October 11, 2026 at 4:05 PM ET. Source Agencies, in order, are the league governing the event, ESPN, Fox Sports, and the broadcast partner of the event. It closes on October 13, 2026 at 4:05 AM ET.",
     );
     // The draw rule ("50/50") reads like odds; it is never picked.
-    expect(ctx.text).not.toContain("50/50");
+    expect(long).not.toContain("50/50");
     expectPlain(ctx.text);
-    expect(sentenceCount(ctx.text)).toBe(3);
+    expect(sentenceCount(ctx.text)).toBe(1);
+    expect(marketSentences(nflGame, c, cardOf(nflGame, c), NOW)).toHaveLength(3);
   });
 
   it("writes long dashes in the rules as commas", () => {
@@ -189,7 +202,8 @@ describe("marketContext from real events", () => {
     const e = event({ ticker: "STRIPEIPO", title: "Will Stripe announce an IPO?", category: "Business" }, [c]);
     const ctx = marketContext(e, c, cardOf(e, c), NOW);
     // Too long with its aside in brackets, so the aside goes.
-    expect(ctx.text).toBe("If Stripe publicly announces an IPO before Sep 1, 2026, this market resolves to Yes. It closes on October 31, 2026 at 11:59 PM ET, in 20 days.");
+    expect(ctx.text).toBe("If Stripe publicly announces an IPO before Sep 1, 2026, this market resolves to Yes.");
+    expect(longForm(e, c, cardOf(e, c))).toBe("If Stripe publicly announces an IPO before Sep 1, 2026, this market resolves to Yes. It closes on October 31, 2026 at 11:59 PM ET, in 20 days.");
     expect(plainText("it has filed\u2014confidentially or publicly\u2014a statement")).toBe("it has filed, confidentially or publicly, a statement");
     expectPlain(ctx.text);
   });
@@ -199,20 +213,24 @@ describe("marketContext from real events", () => {
     const card = cardOf(stripeIpo, c);
     expect(card.question).toBe("When will Stripe announce an IPO: Before Nov 1, 2026?");
     const ctx = marketContext(stripeIpo, c, card, NOW);
-    expect(ctx.text).toBe(
+    expect(ctx.text).toBe('This market resolves YES if the outcome of "When will Stripe announce an IPO" is "Before Nov 1, 2026".');
+    const long = longForm(stripeIpo, c, card);
+    expect(long).toBe(
       'This market resolves YES if the outcome of "When will Stripe announce an IPO" is "Before Nov 1, 2026". It closes on October 31, 2026 at 11:59 PM ET, in 20 days.',
     );
     // The shared text names another option's date; it must not be shown for this one.
-    expect(ctx.text).not.toContain("Sep 1, 2026");
+    expect(long).not.toContain("Sep 1, 2026");
     expect(ctx.sourceUrl).toBeNull();
     expectPlain(ctx.text);
-    expect(sentenceCount(ctx.text)).toBe(2);
+    expect(sentenceCount(ctx.text)).toBe(1);
+    expect(marketSentences(stripeIpo, c, card, NOW)).toHaveLength(2);
   });
 
   it("strips markdown links and keeps the leaderboard source (Best AI)", () => {
     const c = bestAi.contracts![0]!;
     const ctx = marketContext(bestAi, c, cardOf(bestAi, c), NOW);
-    expect(ctx.text).toBe(
+    expect(ctx.text).toBe("If Anthropic has the top-ranked LLM on Dec 31, 2026, then the market resolves to Yes.");
+    expect(longForm(bestAi, c, cardOf(bestAi, c))).toBe(
       "If Anthropic has the top-ranked LLM on Dec 31, 2026, then the market resolves to Yes. Outcome verified from LM Arena Leaderboard (Remove Style Controls). It closes on December 31, 2026 at 11:59 PM ET, in 81 days.",
     );
     expect(ctx.sourceUrl).toBeNull();
@@ -234,10 +252,15 @@ describe("marketContext from real events", () => {
     expect(card.question).toBe("SOL price today at 7:50pm EDT: Up from $111.15?");
     const open = marketContext(solUpDown, c, card, new Date("2026-10-11T23:46:00.000Z"));
     expect(open.text).toBe(
+      "If the price of Solana (SOL) is greater than or equal to the price specified in the title on October 11, 2026 at 7:50pm ET, this market will resolve to Yes.",
+    );
+    expect(longForm(solUpDown, c, card, new Date("2026-10-11T23:46:00.000Z"))).toBe(
       "If the price of Solana (SOL) is greater than or equal to the price specified in the title on October 11, 2026 at 7:50pm ET, this market will resolve to Yes. Outcome verified against the LS-LRRR-SOLNUSD index. It closes on October 11, 2026 at 7:50 PM ET.",
     );
     expectPlain(open.text);
-    expect(marketContext(solUpDown, c, card, NOW).text).toMatch(/It closed on October 11, 2026 at 7:50 PM ET\.$/);
+    // The one line does not depend on the clock; the longer form says when it closed.
+    expect(marketContext(solUpDown, c, card, NOW).text).toBe(open.text);
+    expect(longForm(solUpDown, c, card)).toMatch(/It closed on October 11, 2026 at 7:50 PM ET\.$/);
   });
 
   it("never reads prices: the text is the same whatever the quotes are", () => {
@@ -248,8 +271,12 @@ describe("marketContext from real events", () => {
         const unquoted = marketContext(e, { ...c, prices: { buy: {}, sell: {} } } as GeminiContract, card, NOW);
         expect(unquoted).toEqual(quoted);
         expectPlain(quoted.text);
-        expect(sentenceCount(quoted.text)).toBeGreaterThanOrEqual(2);
-        expect(sentenceCount(quoted.text)).toBeLessThanOrEqual(3);
+        expect(sentenceCount(quoted.text)).toBe(1);
+        const sentences = marketSentences(e, c, card, NOW);
+        expect(marketSentences(e, { ...c, prices: { buy: {}, sell: {} } } as GeminiContract, card, NOW)).toEqual(sentences);
+        expect(sentences.length).toBeGreaterThanOrEqual(2);
+        expect(sentences.length).toBeLessThanOrEqual(3);
+        expect(sentences[0]).toBe(quoted.text);
       }
     }
   });
@@ -258,36 +285,69 @@ describe("marketContext from real events", () => {
 describe("marketContext without the event", () => {
   const card: MarketCard = { question: "SOL price today at 7:50pm EDT: Up from $111.15?", category: "Crypto", expiresAt: "2026-10-11T23:50:00.000Z" };
 
-  it("builds two sentences from the card alone", () => {
+  it("builds its line from the card alone, and two sentences in the longer form", () => {
     const ctx = marketContext(null, null, card, new Date("2026-10-11T23:46:00.000Z"));
     expect(ctx).toEqual({
-      text: 'This market resolves YES if the answer to "SOL price today at 7:50pm EDT: Up from $111.15?" is yes, and NO otherwise. It closes on October 11, 2026 at 7:50 PM ET.',
+      text: 'This market resolves YES if the answer to "SOL price today at 7:50pm EDT: Up from $111.15?" is yes, and NO otherwise.',
       sourceTitle: "Market rules on Gemini",
       sourceUrl: null,
       sourceDomain: null,
     });
+    expect(longForm(null, null, card, new Date("2026-10-11T23:46:00.000Z"))).toBe(
+      'This market resolves YES if the answer to "SOL price today at 7:50pm EDT: Up from $111.15?" is yes, and NO otherwise. It closes on October 11, 2026 at 7:50 PM ET.',
+    );
     expectPlain(ctx.text);
   });
 
   it("uses the event when only the contract is missing", () => {
-    const ctx = marketContext(xrpLadder, null, { question: "XRP price on October 12: $1.40 or above?", category: "Crypto", expiresAt: "2026-10-12T21:00:00.000Z" }, NOW);
-    expect(ctx.text).toBe(
+    const lone: MarketCard = { question: "XRP price on October 12: $1.40 or above?", category: "Crypto", expiresAt: "2026-10-12T21:00:00.000Z" };
+    const ctx = marketContext(xrpLadder, null, lone, NOW);
+    expect(ctx.text).toBe('This market resolves YES if the answer to "XRP price on October 12: $1.40 or above?" is yes, and NO otherwise.');
+    expect(longForm(xrpLadder, null, lone)).toBe(
       'This market resolves YES if the answer to "XRP price on October 12: $1.40 or above?" is yes, and NO otherwise. The outcome is checked against the LS-LRRR-XRPUSD index. It closes on October 12, 2026 at 5:00 PM ET.',
     );
     expect(ctx.sourceUrl).toBe(XRP_TERMS);
   });
 
   it("drops the question when it carries a blocked name, and is still not empty", () => {
-    const ctx = marketContext(null, null, { question: "Best AI at the end of 2026: Gemini?", category: "Tech", expiresAt: "2027-01-01T04:59:00.000Z" }, NOW);
-    expect(ctx.text).toBe("This is a yes or no market in Tech. It closes on December 31, 2026 at 11:59 PM ET, in 81 days.");
+    const blocked: MarketCard = { question: "Best AI at the end of 2026: Gemini?", category: "Tech", expiresAt: "2027-01-01T04:59:00.000Z" };
+    const ctx = marketContext(null, null, blocked, NOW);
+    expect(ctx.text).toBe("This is a yes or no market in Tech.");
+    expect(longForm(null, null, blocked)).toBe("This is a yes or no market in Tech. It closes on December 31, 2026 at 11:59 PM ET, in 81 days.");
     expectPlain(ctx.text);
   });
 
   it("is never empty, even with nothing usable on the card", () => {
     const ctx = marketContext(null, null, { question: "", category: "", expiresAt: "not a date" }, NOW);
     expect(ctx.text).toBe("This is a yes or no market.");
-    const odd = marketContext(null, null, { question: "Kalshi odds?", category: "Betting odds", expiresAt: "2026-10-12T21:00:00.000Z" }, NOW);
-    expect(odd.text).toBe("This is a yes or no market. It closes on October 12, 2026 at 5:00 PM ET.");
+    const odd: MarketCard = { question: "Kalshi odds?", category: "Betting odds", expiresAt: "2026-10-12T21:00:00.000Z" };
+    expect(marketContext(null, null, odd, NOW).text).toBe("This is a yes or no market.");
+    expect(longForm(null, null, odd)).toBe("This is a yes or no market. It closes on October 12, 2026 at 5:00 PM ET.");
+  });
+
+  it("keeps a long question inside the one-line limit", () => {
+    const base = "Will the city council approve the full harbor bridge repair budget before the end of the year";
+    const fits: MarketCard = { question: `${base} as planned?`, category: "Politics", expiresAt: "2026-10-12T21:00:00.000Z" };
+    expect(marketContext(null, null, fits, NOW).text).toBe(`This market resolves YES if the answer to "${base} as planned?" is yes, and NO otherwise.`);
+    // Too long with ", and NO otherwise": the shorter wording is used.
+    const longer: MarketCard = { ...fits, question: `${base} as the mayor first planned?` };
+    const shorter = marketContext(null, null, longer, NOW).text;
+    expect(shorter).toBe(`This market resolves YES if the answer to "${base} as the mayor first planned?" is yes.`);
+    expect(shorter.length).toBeLessThanOrEqual(MAX_MARKET_TEXT_LENGTH);
+    // Too long either way: the plain line.
+    const longest: MarketCard = { ...fits, question: `${base} ${"and the one after that ".repeat(4)}as planned?` };
+    expect(marketContext(null, null, longest, NOW).text).toBe("This is a yes or no market in Politics.");
+  });
+
+  it("clips a rule that is over the limit even without its asides", () => {
+    const rule = `This market resolves to YES if, on or before December 31, 2026, 11:59 PM ET, a Mathematical Proof is published and accepted by the Source Agency demonstrating that the June 2026 Zcash Orchard shielded-pool soundness vulnerability was not exploited.`;
+    const c = contract({ instrumentSymbol: "GEMI-ZECEXPLOIT26-NOEXPLOITPROOF", label: "Yes", expiryDate: "2027-01-01T04:59:00.000Z", description: doc(rule) });
+    const e = event({ ticker: "ZECEXPLOIT26", title: "Zcash Orchard pool vulnerability proven not exploited by Dec 31, 2026?", category: "Tech" }, [c]);
+    const text = marketContext(e, c, cardOf(e, c), NOW).text;
+    expect(rule.length).toBeGreaterThan(MAX_MARKET_TEXT_LENGTH);
+    expect(text.length).toBeLessThanOrEqual(180);
+    expect(text).toMatch(/^This market resolves to YES if, on or before December 31, 2026, 11:59 PM ET, a Mathematical Proof is published .+\.\.\.$/);
+    expectPlain(text);
   });
 
   it("strips HTML and markdown from a description and from the card", () => {
@@ -302,8 +362,10 @@ describe("marketContext without the event", () => {
       }),
     ]);
     const c = e.contracts![0]!;
-    const ctx = marketContext(e, c, { question: "Will it rain in Austin?", category: "Weather", expiresAt: "2026-10-12T21:00:00.000Z" }, NOW);
-    expect(ctx.text).toBe(
+    const rain: MarketCard = { question: "Will it rain in Austin?", category: "Weather", expiresAt: "2026-10-12T21:00:00.000Z" };
+    const ctx = marketContext(e, c, rain, NOW);
+    expect(ctx.text).toBe("This market resolves to Yes if the National Weather Service records rain in Austin on October 12, 2026.");
+    expect(longForm(e, c, rain)).toBe(
       "This market resolves to Yes if the National Weather Service records rain in Austin on October 12, 2026. Outcome verified from the National Weather Service. It closes on October 12, 2026 at 5:00 PM ET.",
     );
     expectPlain(ctx.text);
@@ -388,7 +450,7 @@ describe("marketContext over the saved Gemini samples", () => {
     .map((name) => fileURLToPath(new URL(`../../../docs/samples/${name}`, import.meta.url)))
     .filter((path) => existsSync(path));
 
-  it.skipIf(samples.length === 0)("gives every contract a plain, odds-free text of two or three sentences", () => {
+  it.skipIf(samples.length === 0)("gives every contract one plain, odds-free line, and two or three sentences in the longer form", () => {
     let seen = 0;
     for (const path of samples) {
       const events = (JSON.parse(readFileSync(path, "utf8")) as { data?: GeminiEvent[] }).data ?? [];
@@ -396,13 +458,20 @@ describe("marketContext over the saved Gemini samples", () => {
         for (const c of e.contracts ?? []) {
           const expiresAt = expiresAtOf(e, c);
           if (!expiresAt) continue;
-          const ctx = marketContext(e, c, { question: questionFor(e, c), category: e.category ?? "Other", expiresAt }, NOW);
+          const card: MarketCard = { question: questionFor(e, c), category: e.category ?? "Other", expiresAt };
+          const ctx = marketContext(e, c, card, NOW);
           seen++;
-          expect(ctx.text.length).toBeGreaterThan(40);
-          expect(ctx.text.length).toBeLessThanOrEqual(MAX_MARKET_TEXT_LENGTH);
+          expect(ctx.text.length).toBeGreaterThan(20);
+          expect(ctx.text.length).toBeLessThanOrEqual(180);
+          expect(MAX_MARKET_TEXT_LENGTH).toBe(180);
           expect(mentionsOdds(ctx.text)).toBe(false);
           expect(ctx.text).not.toMatch(/<[a-z/][^>]*>|\]\(|\*\*|https?:\/\/|\n/i);
-          expect(ctx.text).toMatch(/It close[sd] on [A-Z][a-z]+ \d{1,2}, \d{4} at \d{1,2}:\d{2} [AP]M ET(?:, in \d+ days)?\.$/);
+          expect(ctx.text).toMatch(/[.!?]["”’)]?$/);
+          expect(ctx.text).not.toMatch(/It close[sd] on/);
+          const sentences = marketSentences(e, c, card, NOW);
+          expect(sentences[0]).toBe(ctx.text);
+          expect(sentences.length === 2 || sentences.length === 3).toBe(true);
+          expect(sentences[sentences.length - 1]).toMatch(/^It close[sd] on [A-Z][a-z]+ \d{1,2}, \d{4} at \d{1,2}:\d{2} [AP]M ET(?:, in \d+ days)?\.$/);
           expect(ctx.sourceTitle).toBe("Market rules on Gemini");
           expect(ctx.sourceDomain).toBeNull();
           expect(ctx.sourceUrl === null || (/^https:\/\//.test(ctx.sourceUrl) && !/token=|apiKey=/i.test(ctx.sourceUrl))).toBe(true);

@@ -18,15 +18,17 @@
 // Nothing is read from `prices`: blind means blind (CLAUDE.md rule 5).
 import type { GeminiContract, GeminiEvent } from "../gemini/client";
 import type { CardPublic } from "../types";
-import { clipAtWord, decodeEntities, mentionsOdds } from "./pick";
+import { MAX_LINE_LENGTH, clipAtWord, decodeEntities, mentionsOdds } from "./pick";
 
 export const MARKET_SOURCE_TITLE = "Market rules on Gemini";
-/** Longest "what resolves Yes" sentence. */
-const MAX_RULE_LENGTH = 220;
+/** Longest "what resolves Yes" sentence. It is the card's one line, so the one-line limit applies. */
+const MAX_RULE_LENGTH = MAX_LINE_LENGTH;
 /** Longest source sentence; some rules list twenty outlets. */
 const MAX_SOURCE_LENGTH = 130;
-/** Past this the source sentence is left out, keeping the rule and the close time. */
-export const MAX_MARKET_TEXT_LENGTH = 360;
+/** Past this marketSentences leaves the source sentence out, keeping the rule and the close time. */
+const MAX_SENTENCES_LENGTH = 360;
+/** Longest tier 3 text: one line. */
+export const MAX_MARKET_TEXT_LENGTH = MAX_LINE_LENGTH;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** The parts of a card this module reads. Prices are not among them. */
@@ -137,9 +139,10 @@ function ruleFromLabel(event: GeminiEvent | null, contract: GeminiContract | nul
   const candidates = [
     title && label && !/^(?:yes|up|down)$/i.test(label) ? `This market resolves YES if the outcome of "${title}" is "${label}".` : null,
     question ? `This market resolves YES if the answer to "${question}" is yes, and NO otherwise.` : null,
+    question ? `This market resolves YES if the answer to "${question}" is yes.` : null,
   ];
   for (const candidate of candidates) {
-    if (candidate && candidate.length <= MAX_RULE_LENGTH + 40 && !mentionsOdds(candidate)) return candidate;
+    if (candidate && candidate.length <= MAX_RULE_LENGTH && !mentionsOdds(candidate)) return candidate;
   }
   return null;
 }
@@ -214,19 +217,29 @@ function termsUrl(event: GeminiEvent | null, contract: GeminiContract | null): s
 // ---------- Tier 3 ----------
 
 /**
- * The market's rules for a card back. Two or three sentences: what resolves
- * Yes, the reference source when the rules name one, and when it closes (New
- * York time). With no event (the lookup failed) or no contract, the text is
- * built from the card alone, so it is never empty. No prices, no odds: nothing
- * is read from `prices`, and any sentence the odds filter flags is dropped.
+ * The market's rules as sentences, in order: what resolves Yes, the reference
+ * source when the rules name one, and when it closes (New York time). Two or
+ * three sentences; the first is never missing. With no event (the lookup
+ * failed) or no contract they are built from the card alone. No prices, no
+ * odds: nothing is read from `prices`, and any sentence the odds filter flags
+ * is dropped.
  */
-export function marketContext(event: GeminiEvent | null, contract: GeminiContract | null, card: MarketCard, now: Date = new Date()): MarketContext {
+export function marketSentences(event: GeminiEvent | null, contract: GeminiContract | null, card: MarketCard, now: Date = new Date()): string[] {
   const sentences = ruleSentences(contract);
   const rule = (event && contract ? ruleFromDescription(event, contract, sentences) : null) ?? ruleFromLabel(event, contract, card) ?? ruleFromCategory(card);
   const source = sourceSentence(event, sentences);
   const close = closeSentence(card.expiresAt, now);
 
   const full = [rule, source, close].filter((s): s is string => s !== null);
-  const text = full.join(" ").length <= MAX_MARKET_TEXT_LENGTH ? full.join(" ") : [rule, close].filter((s): s is string => s !== null).join(" ");
-  return { text, sourceTitle: MARKET_SOURCE_TITLE, sourceUrl: termsUrl(event, contract), sourceDomain: null };
+  return full.join(" ").length <= MAX_SENTENCES_LENGTH ? full : [rule, close].filter((s): s is string => s !== null);
+}
+
+/**
+ * The market's rules for a card back, as one line: the first of
+ * marketSentences, which says what resolves Yes, in at most 180 characters.
+ * Never empty.
+ */
+export function marketContext(event: GeminiEvent | null, contract: GeminiContract | null, card: MarketCard, now: Date = new Date()): MarketContext {
+  const line = marketSentences(event, contract, card, now)[0] ?? ruleFromCategory(card);
+  return { text: fit(line, MAX_LINE_LENGTH), sourceTitle: MARKET_SOURCE_TITLE, sourceUrl: termsUrl(event, contract), sourceDomain: null };
 }

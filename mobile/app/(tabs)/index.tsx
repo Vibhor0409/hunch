@@ -14,6 +14,7 @@ import { HunchMark } from "@/components/HunchMark";
 import { LaneChips, nextLane } from "@/components/LaneChips";
 import { usePlayer } from "@/components/PlayerContext";
 import { RevealSheet, type SheetState } from "@/components/RevealSheet";
+import { SessionToggle, useSessionMode } from "@/components/SessionMode";
 import { EmptyView, ErrorView } from "@/components/StateViews";
 import { SwipeCard, type SwipeCardHandle } from "@/components/SwipeCard";
 import { isHidden, markSkipped, markSwiped } from "@/components/session";
@@ -37,6 +38,7 @@ interface CacheEntry {
 
 export default function DeckScreen() {
   const { playerId } = usePlayer();
+  const { mode: sessionMode } = useSessionMode();
   const [lane, setLane] = useState<LaneFilter>("foryou");
   const [cards, setCards] = useState<CardPublic[]>([]);
   const [status, setStatus] = useState<PlayerStatus | null>(null);
@@ -58,6 +60,12 @@ export default function DeckScreen() {
   useEffect(() => {
     cardsRef.current = cards;
   }, [cards]);
+  // The session mode is read at swipe time through a ref, so flipping the toggle
+  // changes nothing the card stack receives.
+  const sessionModeRef = useRef(sessionMode);
+  useEffect(() => {
+    sessionModeRef.current = sessionMode;
+  }, [sessionMode]);
 
   // How far the top card has travelled toward a commit. The cards behind read it.
   const topProgress = useSharedValue(0);
@@ -212,6 +220,7 @@ export default function DeckScreen() {
         eventTicker: card.eventTicker,
         instrumentSymbol: card.instrumentSymbol,
         side,
+        mode: sessionModeRef.current,
       })
         .then((reveal) => {
           markSwiped(card.instrumentSymbol);
@@ -309,6 +318,7 @@ export default function DeckScreen() {
 }
 
 const Header = memo(function Header({ status }: { status: PlayerStatus | null }) {
+  const { mode: sessionMode } = useSessionMode();
   const practice = status !== null && status.paidLeftToday <= 0;
   const balance = status && typeof status.balance === "number" ? formatMoney(status.balance) : null;
   return (
@@ -324,6 +334,7 @@ const Header = memo(function Header({ status }: { status: PlayerStatus | null })
           </View>
         ) : null}
       </View>
+      <SessionToggle />
       <View style={styles.statsRow}>
         <View style={styles.stat}>
           <View style={styles.statLine}>
@@ -338,7 +349,14 @@ const Header = memo(function Header({ status }: { status: PlayerStatus | null })
         </View>
         {balance ? (
           <View style={[styles.stat, styles.statRight]}>
-            <Text style={styles.statNumber}>{balance}</Text>
+            <View style={styles.statLine}>
+              {sessionMode === "practice" ? (
+                <View testID="mode-badge" style={styles.practiceBadge}>
+                  <Text style={styles.practiceBadgeText}>Practice</Text>
+                </View>
+              ) : null}
+              <Text style={styles.statNumber}>{balance}</Text>
+            </View>
             <Text style={styles.statLabel}>Play money</Text>
           </View>
         ) : null}

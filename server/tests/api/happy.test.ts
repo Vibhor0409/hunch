@@ -360,7 +360,8 @@ describe.skipIf(!process.env.API_BASE_URL)("Hunch API happy path", () => {
       expect(second.available, "context is always available once the market is found").toBe(true);
       if (second.kind === "web") expect(second.cached, "a web answer is served from the cache on the second call").toBe(true);
       expect(second.available, "cached answer agrees on availability").toBe(first.available);
-      expect(second.text, "cached answer carries the same text").toBe(first.text);
+      // A live price line (kind "market" from the spot feed) can change between calls, so only a web answer must repeat exactly.
+      if (second.kind === "web") expect(second.text, "cached answer carries the same text").toBe(first.text);
     },
     2 * REQUEST_TIMEOUT_MS + 10_000,
   );

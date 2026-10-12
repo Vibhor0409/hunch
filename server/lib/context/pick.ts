@@ -8,6 +8,10 @@ import { EXCLUDED_DOMAINS } from "./client";
 
 /** Longest context line the card back shows (two to three lines). */
 export const MAX_TEXT_LENGTH = 220;
+/** The card back reads as one line: a single sentence of at most this many characters. */
+export const MAX_LINE_LENGTH = 180;
+/** A sentence shorter than this ("Mostly cloudy.", "Hot.") is a fragment and cannot be the line on its own. */
+const MIN_LINE_WORDS = 4;
 /** Excerpts shorter than this are headers, numbers or dates, not news. */
 const MIN_CHUNK_LENGTH = 40;
 /** Below this share of letters an excerpt is a price table, not prose. */
@@ -178,6 +182,31 @@ export function trimToSentences(sentences: readonly string[], max: number = MAX_
   return first ? clipAtWord(first, max) : null;
 }
 
+/**
+ * The one-line rule: the first qualifying sentence, alone. A sentence
+ * qualifies when it is whole, passes the odds filter and has at least four
+ * words. Over-long sentences are handled as trimToSentences does: a later
+ * sentence that fits is taken, and when none fits the first is clipped at a
+ * word boundary with "...". Null when no sentence qualifies.
+ */
+export function oneSentence(sentences: readonly string[], max: number = MAX_LINE_LENGTH): string | null {
+  const eligible = sentences.filter((s) => isWholeSentence(s) && !mentionsOdds(s) && s.split(/\s+/).length >= MIN_LINE_WORDS);
+  const first = eligible[0];
+  if (!first) return null;
+  return eligible.find((s) => s.length <= max) ?? clipAtWord(first, max);
+}
+
+/**
+ * A stored or picked text as one line: its first qualifying sentence. Text
+ * stored before the one-line rule held up to three sentences, so this runs on
+ * every web answer. Text without a qualifying sentence is kept, clipped when
+ * too long. A line that already follows the rule comes back unchanged.
+ */
+export function oneLine(text: string, max: number = MAX_LINE_LENGTH): string {
+  const clean = text.replace(/\s+/g, " ").trim();
+  return oneSentence(splitSentences(clean), max) ?? (clean.length <= max ? clean : clipAtWord(clean, max));
+}
+
 // ---------- Sources ----------
 
 /** The host of a URL without a leading "www.", or null when the URL does not parse. */
@@ -236,7 +265,7 @@ interface Candidate {
 function fromHighlights(result: PickableResult): string | null {
   for (const passage of result.highlights?.highlights ?? []) {
     for (const chunk of proseChunks(passage)) {
-      const text = trimToSentences(splitSentences(chunk));
+      const text = oneSentence(splitSentences(chunk));
       if (text) return text;
     }
   }
@@ -249,7 +278,7 @@ function fromDescription(result: PickableResult, domain: string): string | null 
   for (const chunk of snippetChunks(result.description ?? "")) {
     // A snippet runs prose into price strips ("... by MarketWatch. $6.6 $6.7"), so it also breaks before a currency sign.
     const sentences = splitSentences(chunk).flatMap((sentence) => sentence.split(/(?<=[.!?])\s+(?=[$€£])/));
-    const text = trimToSentences(sentences.filter(isProseSentence));
+    const text = oneSentence(sentences.filter(isProseSentence));
     if (text) return text;
   }
   return null;
@@ -270,8 +299,8 @@ function firstPick(candidates: readonly Candidate[], textOf: (result: PickableRe
  * 2. Results rated "low" are skipped, and the rest are visited best first
  *    (high, then medium, then unrated; ties keep the API order). Within a
  *    result, each highlight passage's prose excerpts are tried in order.
- * 3. The first excerpt that still has text after trimToSentences (whole
- *    sentences, at most 220 characters, odds sentences dropped) wins.
+ * 3. The first excerpt that still has a line after oneSentence (one whole
+ *    sentence, at most 180 characters, odds sentences dropped) wins.
  * 4. With `allowDescription`, when no highlight gave a line, the results'
  *    descriptions are tried in the same order and under the same trim. Only
  *    statements count (no titles, tag lists or price strips), and sites of

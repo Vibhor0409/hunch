@@ -29,7 +29,7 @@ const HOUR_MS = 60 * 60 * 1000;
 
 let seq = 0;
 /** A fresh market per test: the module keeps a per-instance memo and an in-flight map. */
-function market(options: { lane?: Lane; series?: string | null; title?: string; label?: string } = {}) {
+function market(options: { lane?: Lane; series?: string | null; title?: string; label?: string; category?: string } = {}) {
   const id = ++seq;
   const title = options.title ?? `Harbor bridge vote ${id}`;
   const label = options.label ?? "Passes";
@@ -48,12 +48,13 @@ function market(options: { lane?: Lane; series?: string | null; title?: string; 
       content: [{ nodeType: "text", value: `If the council passes the bridge plan ${id}, this market resolves to Yes. Otherwise, it resolves to No. Outcome verified from the city clerk.` }],
     },
   };
-  const event = { ticker: eventTicker, title, category: "Politics", series: options.series ?? null, expiryDate: expiresAt, contracts: [contract] };
+  const category = options.category ?? "Politics";
+  const event = { ticker: eventTicker, title, category, series: options.series ?? null, expiryDate: expiresAt, contracts: [contract] };
   const card: CardQuote = {
     eventTicker,
     instrumentSymbol,
     question: `${title}: ${label}?`,
-    category: "Politics",
+    category,
     lane: options.lane ?? "tomorrow",
     expiresAt,
     tradable: false,
@@ -125,6 +126,144 @@ function deal(m: ReturnType<typeof market>, options: { quote?: boolean; event?: 
   vi.mocked(getQuote).mockResolvedValue(options.quote === false ? null : m.card);
   vi.mocked(getEventOrNull).mockImplementation(async (client) => ((client as unknown as { env: string }).env === "production" && options.event !== false ? (m.event as never) : null));
 }
+
+const CANDLES_URL = "https://api.gemini.com/v2/candles/";
+const MINUTE_MS = 60_000;
+
+/** Candle rows as Gemini sends them: one per minute for 3 hours, newest first, walking from `from` to `to` over the past 2 hours. */
+function candleRows(from: number, to: number, newestAgeMinutes = 1): number[][] {
+  const newest = Math.floor(Date.now() / MINUTE_MS) * MINUTE_MS - newestAgeMinutes * MINUTE_MS;
+  const closeAt = (i: number) => (i >= 118 ? from : to + ((from - to) * i) / 118);
+  return Array.from({ length: 180 }, (_, i) => {
+    const close = closeAt(i);
+    const open = closeAt(i + 1);
+    return [newest - i * MINUTE_MS, open, Math.max(open, close) + 12, Math.min(open, close) - 12, close, 1];
+  });
+}
+
+/** Like stubSearch, with the public candles endpoint answered by `candles` and its requests kept apart. */
+function stubNetwork(candles: Reply, ...replies: Reply[]) {
+  const candleRequests: string[] = [];
+  const requests: { url: string; body: Record<string, unknown> }[] = [];
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: unknown, init?: RequestInit) => {
+      const isCandles = String(url).startsWith(CANDLES_URL);
+      if (isCandles) candleRequests.push(String(url));
+      else requests.push({ url: String(url), body: JSON.parse(String(init?.body)) as Record<string, unknown> });
+      const reply = isCandles ? candles : replies.shift();
+      if (!reply) throw new Error("unexpected search");
+      if (reply instanceof Error) throw reply;
+      return new Response(JSON.stringify(reply.body ?? {}), { status: reply.status ?? 200 });
+    }),
+  );
+  return { candleRequests, requests };
+}
+
+describe("tier 0: spot price, crypto price cards only", () => {
+  // price.ts keeps one sentence per asset for a minute, so each test uses its own asset.
+  it("answers from Gemini's spot candles before any other tier, with no database and no credits", async () => {
+    const m = market({ category: "Crypto", series: "BTC05M", title: "BTC price today at 8:05pm EDT", label: "Up" });
+    deal(m);
+    const net = stubNetwork({ body: candleRows(83523, 83690) });
+
+    const lookup = await resolveCardContext(m.eventTicker, m.instrumentSymbol);
+
+    expect(lookup.context).toEqual({
+      available: true,
+      kind: "market",
+      text: expect.stringMatching(/^Bitcoin is at \$83,690, up 0\.2% over the past 2 hours, ranging from \$83,5\d\d to \$83,702\.$/),
+      sourceTitle: "Gemini spot price, past 2 hours",
+      sourceUrl: null,
+      sourceDomain: null,
+      cached: false,
+    });
+    expect(lookup).toMatchObject({ tier: 0, credits: 0, searches: 0 });
+    expect(net.candleRequests).toEqual(["https://api.gemini.com/v2/candles/btcusd/1m"]);
+    expect(net.requests).toHaveLength(0);
+    for (const database of [readCachedContext, writeCachedContext, readUsage, recordUsage]) expect(database).not.toHaveBeenCalled();
+    expect(logs).toEqual([expect.stringMatching(/^\[context\] tier=0 ms=\d+ credits=0$/)]);
+
+    // A second tap inside the minute: the same sentence, from memory.
+    const again = await getCardContext(m.eventTicker, m.instrumentSymbol);
+    expect(again).toEqual({ ...lookup.context, cached: true });
+    expect(net.candleRequests).toHaveLength(1);
+  });
+
+  it("falls through to the web tiers, unchanged, when the candles answer with an error", async () => {
+    const m = market({ category: "Crypto", series: "ETH1H", title: "ETH price on October 12", label: "$2,440 or above" });
+    deal(m);
+    const net = stubNetwork({ status: 500, body: { result: "error" } }, { body: body([hit(NEWS)]) });
+
+    const lookup = await resolveCardContext(m.eventTicker, m.instrumentSymbol);
+
+    expect(net.candleRequests).toEqual(["https://api.gemini.com/v2/candles/ethusd/1m"]);
+    expect(net.requests).toHaveLength(1);
+    expect(net.requests[0]!.body.query).toBe("ETH price on October 12: $2,440 or above? latest news");
+    expect(lookup.context).toMatchObject({ available: true, kind: "web", text: NEWS, sourceDomain: "example.com", cached: false });
+    expect(lookup).toMatchObject({ tier: 1, credits: 2, searches: 1 });
+    expect(vi.mocked(writeCachedContext).mock.calls[0]![0]).toBe("ETH1H");
+    expect(logs).toEqual([expect.stringMatching(/^\[context\] tier=1 ms=\d+ credits=2$/)]);
+  });
+
+  it("falls through to the market rules when the candles are stale and the web has nothing", async () => {
+    const m = market({ category: "Crypto", series: "SOL15M", title: "SOL price today at 7:15pm EDT", label: "Up" });
+    deal(m);
+    const net = stubNetwork({ body: candleRows(110.97, 111.07, 45) }, { body: body([], 0) }, { body: body([], 0) });
+
+    const lookup = await resolveCardContext(m.eventTicker, m.instrumentSymbol);
+
+    expect(net.candleRequests).toHaveLength(1);
+    expect(net.requests.map((r) => r.body.query)).toEqual(["SOL price today at 7:15pm EDT: Up? latest news", "Solana price today news"]);
+    expect(lookup.context).toMatchObject({ available: true, kind: "market", sourceTitle: "Market rules on Gemini", sourceUrl: null, sourceDomain: null });
+    expect(lookup.context.text).toMatch(/^If the council passes the bridge plan \d+, this market resolves to Yes\.$/);
+    expect(lookup).toMatchObject({ tier: 3, searches: 2 });
+    expect(vi.mocked(writeCachedContext).mock.calls[0]!.slice(0, 3)).toEqual(["SOL15M", null, EMPTY_TTL_MS]);
+  });
+
+  it("falls through to a stored web line when the candles request fails", async () => {
+    const m = market({ category: "Crypto", series: "XRP", title: "XRP price on October 31", label: "$1.50 or above" });
+    deal(m);
+    vi.mocked(readCachedContext).mockResolvedValue({ text: NEWS, sourceTitle: "Bridge vote", sourceUrl: "https://www.example.com/story", sourceDomain: "example.com", fetchedAt: "", expiresAt: "" });
+    const net = stubNetwork(new TypeError("fetch failed"));
+
+    const lookup = await resolveCardContext(m.eventTicker, m.instrumentSymbol);
+
+    expect(net.candleRequests).toHaveLength(1);
+    expect(net.requests).toHaveLength(0);
+    expect(lookup.context).toMatchObject({ available: true, kind: "web", text: NEWS, cached: true });
+    expect(lookup.tier).not.toBe(0);
+  });
+
+  it("does not ask for candles for a crypto card of another asset, or for another category", async () => {
+    for (const options of [
+      { category: "Crypto", series: "ZEC1H", title: "ZEC price on October 12", label: "$1,240 or above" },
+      { category: "Tech", series: "BTC1H", title: "BTC price on October 12", label: "$83,300 or above" },
+      { category: "Crypto", series: null, title: "Will a spot fund be approved", label: "Yes" },
+    ]) {
+      const m = market(options);
+      deal(m);
+      const net = stubNetwork({ body: candleRows(83523, 83690) }, { body: body([hit(NEWS)]) });
+
+      const lookup = await resolveCardContext(m.eventTicker, m.instrumentSymbol);
+
+      expect(net.candleRequests).toHaveLength(0);
+      expect(lookup.context).toMatchObject({ kind: "web", text: NEWS });
+      expect(lookup.tier).toBe(1);
+    }
+  });
+
+  it("is still unavailable, without asking for candles, when the market cannot be found", async () => {
+    const m = market({ category: "Crypto", series: "BTC15M", title: "BTC price today at 7:15pm EDT", label: "Up" });
+    deal(m, { quote: false, event: false });
+    const net = stubNetwork({ body: candleRows(83523, 83690) });
+
+    const context = await getCardContext(m.eventTicker, m.instrumentSymbol);
+
+    expect(context).toEqual({ available: false, kind: "market", text: null, sourceTitle: null, sourceUrl: null, sourceDomain: null, cached: false });
+    expect(net.candleRequests).toHaveLength(0);
+  });
+});
 
 describe("tier 1: web, exact", () => {
   it("answers with the question's own news and stores it", async () => {
@@ -247,7 +386,7 @@ describe("tier 3: market rules", () => {
 
     expect(requests).toHaveLength(2);
     expect(lookup.context).toMatchObject({ available: true, kind: "market", sourceTitle: "Market rules on Gemini", sourceUrl: null, sourceDomain: null, cached: false });
-    expect(lookup.context.text).toMatch(/^If the council passes the bridge plan \d+, this market resolves to Yes\. Outcome verified from the city clerk\. It closes on .+ ET\.$/);
+    expect(lookup.context.text).toMatch(/^If the council passes the bridge plan \d+, this market resolves to Yes\.$/);
     expect(lookup.context.text).not.toMatch(/0\.37|0\.62|37%|63%/);
     expect(lookup).toMatchObject({ tier: 3, searches: 2, credits: 0 });
     expect(vi.mocked(writeCachedContext).mock.calls[0]!.slice(0, 3)).toEqual([m.eventTicker, null, EMPTY_TTL_MS]);
@@ -324,7 +463,7 @@ describe("tier 3: market rules", () => {
     const lookup = await resolveCardContext(m.eventTicker, m.instrumentSymbol);
 
     expect(lookup.context).toMatchObject({ available: true, kind: "market", sourceTitle: "Market rules on Gemini", sourceUrl: null, sourceDomain: null });
-    expect(lookup.context.text).toMatch(new RegExp(`^This market resolves YES if the answer to "${m.title}: Passes\\?" is yes, and NO otherwise\\. It closes on .+ ET\\.$`));
+    expect(lookup.context.text).toBe(`This market resolves YES if the answer to "${m.title}: Passes?" is yes, and NO otherwise.`);
   });
 
   it("still answers when the database fails", async () => {
@@ -353,6 +492,17 @@ describe("cache and availability", () => {
     expect(requests).toHaveLength(0);
     expect(lookup.context).toEqual({ available: true, kind: "web", text: NEWS, sourceTitle: "Bridge vote", sourceUrl: "https://www.example.com/story", sourceDomain: "example.com", cached: true });
     expect(lookup).toMatchObject({ credits: 0, searches: 0 });
+  });
+
+  it("returns a line stored before the one-line rule as its first sentence", async () => {
+    const m = market();
+    deal(m);
+    vi.mocked(readCachedContext).mockResolvedValue({ text: `${NEWS} ${BROAD_NEWS}`, sourceTitle: "Bridge vote", sourceUrl: "https://www.example.com/story", sourceDomain: "example.com", fetchedAt: "", expiresAt: "" });
+    stubSearch();
+
+    const context = await getCardContext(m.eventTicker, m.instrumentSymbol);
+
+    expect(context).toEqual({ available: true, kind: "web", text: NEWS, sourceTitle: "Bridge vote", sourceUrl: "https://www.example.com/story", sourceDomain: "example.com", cached: true });
   });
 
   it("is unavailable only when neither the feed nor Gemini knows the market", async () => {

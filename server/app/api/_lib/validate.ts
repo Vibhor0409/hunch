@@ -50,3 +50,15 @@ export function parseStake(value: unknown): number | null {
   const rounded = Math.round(value * 100) / 100;
   return rounded >= MIN_STAKE && rounded <= MAX_STAKE ? rounded : null;
 }
+
+/** The app's Practice / Live toggle, sent as the optional `mode` field of a swipe. */
+export type SessionMode = "practice" | "live";
+
+/**
+ * The session mode of a swipe. Only the exact string "practice" selects a
+ * practice session. A missing field, null or any other value means "live",
+ * which is the behavior from before the toggle existed.
+ */
+export function sessionModeOf(value: unknown): SessionMode {
+  return value === "practice" ? "practice" : "live";
+}

@@ -2,6 +2,8 @@
 //   npx tsx scripts/context-smoke.ts                  ten real cards, each looked up twice
 //   npx tsx scripts/context-smoke.ts --clear-misses   first delete the stored "nothing found" rows
 //   npx tsx scripts/context-smoke.ts --budget=12      credits this run may spend (default 24)
+//   npx tsx scripts/context-smoke.ts --six            six cards, one line each: BTC, ETH, SOL or XRP, and three
+//                                                     other categories (kind, source title, ms, text); budget 5
 // Ten real cards from as many categories as the feed offers go through
 // resolveCardContext (the same code path as GET /api/context) twice. Passes
 // when 10 of 10 are available and every second call answers in under 1 s.
@@ -20,13 +22,15 @@ import { fetchActiveCards } from "../lib/gemini/feed";
 import type { CardContext, CardQuote } from "../lib/types";
 import {
   MARKET_SOURCE_TITLE,
+  MAX_LINE_LENGTH,
   MAX_MARKET_TEXT_LENGTH,
-  MAX_TEXT_LENGTH,
+  PRICE_SOURCE_TITLE,
   clearCachedMisses,
   dailyCreditCap,
   hasContextKey,
   laDayOf,
   mentionsOdds,
+  priceAssetFor,
   readUsage,
   resolveCardContext,
   runUsage,
@@ -34,10 +38,11 @@ import {
 } from "../lib/context";
 
 const CLEAR_MISSES = process.argv.includes("--clear-misses");
+const SIX = process.argv.includes("--six");
 const CARD_COUNT = 10;
 /** Categories the live check missed; each gets a card when the feed has one. */
 const WANTED = ["Culture", "Crypto", "Business", "Weather", "Tech", "Sports"];
-const DEFAULT_BUDGET = 24;
+const DEFAULT_BUDGET = SIX ? 5 : 24;
 const SECOND_CALL_LIMIT_MS = 1_000;
 /** Cards closing sooner than this are left out of the run. */
 const MIN_TIME_LEFT_MS = 10 * 60_000;
@@ -105,15 +110,17 @@ function checkShape(ctx: CardContext, step: string): void {
   const text = ctx.text ?? "";
   expect(!mentionsOdds(text), step, "text mentions odds or a betting site");
   expect(!/<[a-z/][^>]*>|\]\(|\*\*/i.test(text), step, "text carries HTML or markdown");
+  expect(!/\n/.test(text) && /[.!?]["”’)\]]?$/.test(text), step, "text must be one line that ends as a sentence");
   if (ctx.kind === "web") {
-    expect(text.length <= MAX_TEXT_LENGTH, step, `web text is ${text.length} characters, more than ${MAX_TEXT_LENGTH}`);
+    expect(text.length <= MAX_LINE_LENGTH, step, `web text is ${text.length} characters, more than ${MAX_LINE_LENGTH}`);
     expect(typeof ctx.sourceUrl === "string" && /^https?:\/\//.test(ctx.sourceUrl), step, "web source url must be http(s)");
     expect(typeof ctx.sourceDomain === "string" && ctx.sourceDomain.length > 0, step, "web source domain required");
   } else {
     expect(text.length <= MAX_MARKET_TEXT_LENGTH, step, `market text is ${text.length} characters, more than ${MAX_MARKET_TEXT_LENGTH}`);
-    expect(ctx.sourceTitle === MARKET_SOURCE_TITLE, step, `market source title is "${ctx.sourceTitle}"`);
+    expect(ctx.sourceTitle === MARKET_SOURCE_TITLE || ctx.sourceTitle === PRICE_SOURCE_TITLE, step, `market source title is "${ctx.sourceTitle}"`);
     expect(ctx.sourceDomain === null, step, "market source domain must be null");
     expect(ctx.sourceUrl === null || /^https:\/\//.test(ctx.sourceUrl), step, "market source url must be null or https");
+    if (ctx.sourceTitle === PRICE_SOURCE_TITLE) expect(ctx.sourceUrl === null, step, "the spot price line carries no link");
   }
 }
 
@@ -130,6 +137,7 @@ function cell(value: string | number, width: number): string {
 
 /** How the first call got its answer, for the table. */
 function routeOf(first: ContextLookup): string {
+  if (first.tier === 0) return "spot price";
   if (first.context.kind === "web") return first.context.cached ? "cached" : "searched";
   if (first.context.cached) return "cached miss";
   return first.searches > 0 ? "web miss" : "no search";
@@ -142,8 +150,47 @@ function printTable(rows: readonly Row[]): void {
     console.log(`${cell(card.category, 12)} ${cell(first.tier, 4)} ${cell(first.context.kind, 6)} ${cell(first.ms, 5)} ${cell(second.ms, 6)} ${cell(routeOf(first), 11)} ${text}`);
   }
   console.log(
-    "route: searched = a web tier answered now; cached = a stored web line; web miss = the web was searched and gave nothing usable; cached miss = a stored miss; no search = the web tiers were skipped (credit guard, no key, or a closed market)",
+    "route: spot price = tier 0, the asset's spot move (crypto price cards); searched = a web tier answered now; cached = a stored web line; web miss = the web was searched and gave nothing usable; cached miss = a stored miss; no search = the web tiers were skipped (credit guard, no key, or a closed market)",
   );
+}
+
+/**
+ * --six: one BTC, one ETH and one SOL or XRP price card, then three cards from
+ * three other categories. Each is looked up once and printed as one line:
+ * kind, source title, ms, text. The crypto cards must be answered by tier 0.
+ */
+function pickSix(cards: readonly CardQuote[]): CardQuote[] {
+  const open = cards.filter((card) => new Date(card.expiresAt).getTime() - Date.now() > MIN_TIME_LEFT_MS);
+  const assetOf = (card: CardQuote) => priceAssetFor(card.category, card.eventTicker)?.code ?? null;
+  const crypto = [["BTC"], ["ETH"], ["SOL", "XRP"]].map((codes) => open.find((card) => codes.includes(assetOf(card) ?? "")));
+  const others: CardQuote[] = [];
+  for (const category of [...WANTED, ...new Set(open.map((card) => card.category))]) {
+    if (others.length >= 3 || category === "Crypto" || others.some((card) => card.category === category)) continue;
+    const card = open.find((c) => c.category === category);
+    if (card) others.push(card);
+  }
+  return [...crypto.filter((card): card is CardQuote => card !== undefined), ...others];
+}
+
+async function sixLines(cards: readonly CardQuote[]): Promise<void> {
+  const picked = pickSix(cards);
+  expect(picked.length === 6, "card selection", `found ${picked.length} of the six cards (BTC, ETH, SOL or XRP, three other categories)`);
+  const lines: string[] = [];
+  for (const card of picked) {
+    const lookup = await resolveCardContext(card.eventTicker, card.instrumentSymbol);
+    const { context } = lookup;
+    checkShape(context, `lookup for ${card.eventTicker}`);
+    const asset = priceAssetFor(card.category, card.eventTicker);
+    if (asset) {
+      expect(lookup.tier === 0 && context.sourceTitle === PRICE_SOURCE_TITLE, `lookup for ${card.eventTicker}`, `a ${asset.code} price card was answered by tier ${lookup.tier}, not by the spot price`);
+      expect((context.text ?? "").startsWith(`${asset.name} is at $`), `lookup for ${card.eventTicker}`, "the spot line must lead with the asset and its price");
+    } else {
+      expect(lookup.tier !== 0, `lookup for ${card.eventTicker}`, "only crypto price cards get the spot line");
+    }
+    lines.push(`${cell(card.category, 11)} | ${cell(context.kind, 6)} | ${cell(context.sourceTitle ?? "", 34)} | ${cell(`${lookup.ms} ms`, 8)} | ${context.text}`);
+  }
+  console.log(`\n${cell("category", 11)} | ${cell("kind", 6)} | ${cell("sourceTitle", 34)} | ${cell("ms", 8)} | text`);
+  for (const line of lines) console.log(line);
 }
 
 async function main(): Promise<void> {
@@ -166,6 +213,16 @@ async function main(): Promise<void> {
   console.log(`feed: ${cards.length} cards, ${categories.length} categories: ${categories.join(", ")}`);
   const missing = WANTED.filter((c) => !categories.includes(c));
   if (missing.length > 0) console.log(`not in the feed right now: ${missing.join(", ")}`);
+
+  if (SIX) {
+    await sixLines(cards);
+    const spent = runUsage();
+    const now = await readUsage(day);
+    console.log(`\ncredits used in this run: ${spent.creditsConsumed}; credits remaining: ${spent.lastCreditsRemaining ?? now.lastCreditsRemaining ?? "unknown"}`);
+    expect(spent.creditsConsumed <= budget + 1, "budget", `used ${spent.creditsConsumed} credits against a budget of ${budget}`);
+    console.log("\nCONTEXT SIX OK");
+    return;
+  }
 
   const picked = pickCards(cards, CARD_COUNT);
   expect(picked.length === CARD_COUNT, "card selection", `only ${picked.length} distinct events in the feed`);
