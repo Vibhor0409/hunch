@@ -33,3 +33,6 @@ server/skills-lock.json
 
 # agent worktrees
 .claude/worktrees/
+
+# launch video working files (the final mp4 is delivered outside git)
+brag-output*/
