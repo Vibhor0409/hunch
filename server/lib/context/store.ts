@@ -45,10 +45,18 @@ function toNumberOrNull(value: unknown): number | null {
 
 // ---------- card_context ----------
 
-/** Cache key: the event's series when present (all BTC 5-minute events share one), else its ticker. */
+/**
+ * Cache key: the event's series when its events differ only by their date
+ * stamp (all BTC 5-minute events share "BTC05M", and "XRP2610122100" shares
+ * "XRP1H"), else the event ticker. A series whose tickers carry something more
+ * is not one subject: "WXHIGH" covers every city ("WXHIGH-AUS-2610120359"), and
+ * Austin's weather must not answer for Washington, so those keep their ticker.
+ */
 export function cacheKeyFor(series: string | null | undefined, eventTicker: string): string {
   const trimmed = series?.trim() ?? "";
-  return trimmed.length > 0 ? trimmed : eventTicker;
+  if (trimmed.length === 0) return eventTicker;
+  const stem = eventTicker.replace(/\d{6,}$/, "");
+  return stem.length > 0 && stem !== eventTicker && trimmed.startsWith(stem) ? trimmed : eventTicker;
 }
 
 export interface CachedContext {
@@ -95,6 +103,16 @@ export async function writeCachedContext(key: string, picked: PickedContext | nu
   };
   const { error } = await untyped().from("card_context").upsert(row, { onConflict: "cache_key" });
   if (error) fail("writeCachedContext", error);
+}
+
+/**
+ * Deletes every "nothing found" row (text null) so those markets are searched
+ * again, and returns how many rows went. For the smoke script (--clear-misses).
+ */
+export async function clearCachedMisses(): Promise<number> {
+  const { data, error } = await untyped().from("card_context").delete().is("text", null).select("cache_key");
+  if (error) fail("clearCachedMisses", error);
+  return Array.isArray(data) ? data.length : 0;
 }
 
 // ---------- context_usage ----------

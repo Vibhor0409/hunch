@@ -1,7 +1,9 @@
 // Picks one safe context line from Context.dev search results. Pure: no I/O.
-// Spec: docs/CONTEXT_DEV.md, "pickContext". Shapes follow docs/samples/context-search.json,
-// where a highlight passage is several excerpts joined by "…" lines, with
-// bracketed section headers, markdown tables and HTML entities mixed in.
+// Spec: docs/CONTEXT_DEV.md, "pickContext" and "Always-on context". Shapes
+// follow docs/samples/context-search.json, where a highlight passage is several
+// excerpts joined by "…" lines, with bracketed section headers, markdown tables
+// and HTML entities mixed in, and a description is a short search snippet that
+// often ends cut off with "...".
 import { EXCLUDED_DOMAINS } from "./client";
 
 /** Longest context line the card back shows (two to three lines). */
@@ -15,8 +17,17 @@ const MIN_LETTER_RATIO = 0.5;
 export interface PickableResult {
   url: string;
   title?: string | null;
+  description?: string | null;
   relevance?: string | null;
   highlights?: { highlights?: string[] | null } | null;
+}
+
+/** Looser rules for the broad tier (tier 2). The strict tier passes none. */
+export interface PickOptions {
+  /** A result's description stands in when its highlights are missing or hold no usable sentence. */
+  allowDescription?: boolean;
+  /** Results rated "low" are tried after every other result, as a last resort. */
+  allowLowRelevance?: boolean;
 }
 
 export interface PickedContext {
@@ -41,7 +52,7 @@ export function mentionsOdds(sentence: string): boolean {
 
 // ---------- Cleaning ----------
 
-function decodeEntities(text: string): string {
+export function decodeEntities(text: string): string {
   const fromCodePoint = (code: number): string => (code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : " ");
   return text
     .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) => fromCodePoint(parseInt(hex, 16)))
@@ -82,6 +93,37 @@ export function proseChunks(passage: string): string[] {
     .filter(isProse);
 }
 
+/** A snippet sentence shorter than this is a title or a list entry ("Star Wars: Zero Company."), not a statement. */
+const MIN_SNIPPET_WORDS = 6;
+
+/** Small words every statement leans on. A tag list ("Stripe payments private commerce finance stock offers IPO.") has none. */
+const FUNCTION_WORD =
+  /\b(?:the|a|an|is|are|was|were|be|been|has|have|had|will|would|can|could|should|may|might|to|of|in|on|for|with|by|at|from|that|this|as|after|before|its|their|his|her)\b/gi;
+
+/**
+ * True for a statement: enough words, mostly letters (a price strip is mostly
+ * digits), and at least two different function words.
+ */
+function isProseSentence(sentence: string): boolean {
+  const letters = (sentence.match(/\p{L}/gu) ?? []).length;
+  if (letters / sentence.length < MIN_LETTER_RATIO || sentence.split(/\s+/).length < MIN_SNIPPET_WORDS) return false;
+  const functionWords = new Set((sentence.match(FUNCTION_WORD) ?? []).map((word) => word.toLowerCase()));
+  return functionWords.size >= 2;
+}
+
+/**
+ * The prose pieces of a result description (a search snippet). Pieces are
+ * split on "..." and "…" (the snippet's own cut marks), so a piece that was
+ * cut off has no closing punctuation and is dropped by trimToSentences.
+ */
+export function snippetChunks(description: string): string[] {
+  return decodeEntities(description)
+    .replace(/\*\*|__/g, "")
+    .split(/\s*(?:\.{3,}|…)\s*/)
+    .map((piece) => piece.replace(/\s+/g, " ").trim())
+    .filter(isProse);
+}
+
 // ---------- Sentences ----------
 
 /**
@@ -107,7 +149,7 @@ function isWholeSentence(sentence: string): boolean {
 }
 
 /** The sentence cut at a word boundary with "..." so the result is at most `max` characters. */
-function clipAtWord(sentence: string, max: number): string {
+export function clipAtWord(sentence: string, max: number): string {
   const room = max - 3;
   const cut = sentence.lastIndexOf(" ", room);
   const head = (cut > room / 2 ? sentence.slice(0, cut) : sentence.slice(0, room)).replace(/[\s,;:]+$/, "");
@@ -152,6 +194,28 @@ function isExcludedDomain(domain: string): boolean {
   return EXCLUDED_DOMAINS.some((excluded) => domain === excluded || domain.endsWith(`.${excluded}`));
 }
 
+/**
+ * Sites whose search snippet is a post or a comment rather than reporting. A
+ * description from one of them never stands in for a highlight.
+ */
+const POST_DOMAINS: readonly string[] = [
+  "reddit.com",
+  "facebook.com",
+  "instagram.com",
+  "threads.net",
+  "x.com",
+  "twitter.com",
+  "tiktok.com",
+  "youtube.com",
+  "linkedin.com",
+  "pinterest.com",
+  "quora.com",
+];
+
+function isPostDomain(domain: string): boolean {
+  return POST_DOMAINS.some((site) => domain === site || domain.endsWith(`.${site}`));
+}
+
 function cleanTitle(title: string | null | undefined): string | null {
   const cleaned = (title ?? "").replace(/\s+/g, " ").trim();
   return cleaned.length > 0 ? cleaned : null;
@@ -163,32 +227,73 @@ function rankOf(relevance: string | null | undefined): number {
   return RELEVANCE_RANK[relevance ?? ""] ?? 2;
 }
 
+interface Candidate {
+  result: PickableResult;
+  domain: string;
+}
+
+/** The first highlight excerpt of a result that still has text after the trim and the odds filter. */
+function fromHighlights(result: PickableResult): string | null {
+  for (const passage of result.highlights?.highlights ?? []) {
+    for (const chunk of proseChunks(passage)) {
+      const text = trimToSentences(splitSentences(chunk));
+      if (text) return text;
+    }
+  }
+  return null;
+}
+
+/** The same for a result's description: whole, statement-like sentences only, and not from a site of posts. */
+function fromDescription(result: PickableResult, domain: string): string | null {
+  if (isPostDomain(domain)) return null;
+  for (const chunk of snippetChunks(result.description ?? "")) {
+    // A snippet runs prose into price strips ("... by MarketWatch. $6.6 $6.7"), so it also breaks before a currency sign.
+    const sentences = splitSentences(chunk).flatMap((sentence) => sentence.split(/(?<=[.!?])\s+(?=[$€£])/));
+    const text = trimToSentences(sentences.filter(isProseSentence));
+    if (text) return text;
+  }
+  return null;
+}
+
+function firstPick(candidates: readonly Candidate[], textOf: (result: PickableResult, domain: string) => string | null): PickedContext | null {
+  for (const { result, domain } of candidates) {
+    const text = textOf(result, domain);
+    if (text) return { text, sourceTitle: cleanTitle(result.title), sourceUrl: result.url, sourceDomain: domain };
+  }
+  return null;
+}
+
 /**
  * One context line and its source, or null.
- * 1. Results with relevance "low", without highlights, with an unparseable
- *    URL or from an excluded odds site are skipped.
- * 2. The remaining results are visited best first (high, then medium, then
- *    unrated; ties keep the API order). Within a result, each highlight
- *    passage's prose excerpts are tried in order.
+ * 1. Results with an unparseable URL or from an excluded odds site are
+ *    skipped, always.
+ * 2. Results rated "low" are skipped, and the rest are visited best first
+ *    (high, then medium, then unrated; ties keep the API order). Within a
+ *    result, each highlight passage's prose excerpts are tried in order.
  * 3. The first excerpt that still has text after trimToSentences (whole
  *    sentences, at most 220 characters, odds sentences dropped) wins.
- * 4. Null when nothing remains.
+ * 4. With `allowDescription`, when no highlight gave a line, the results'
+ *    descriptions are tried in the same order and under the same trim. Only
+ *    statements count (no titles, tag lists or price strips), and sites of
+ *    posts and comments are passed over.
+ * 5. With `allowLowRelevance`, when nothing above gave a line, steps 2 to 4
+ *    run again over the results rated "low".
+ * 6. Null when nothing remains.
  */
-export function pickContext(results: readonly PickableResult[]): PickedContext | null {
-  const candidates = results
-    .map((result, index) => ({ result, index }))
-    .filter(({ result }) => result.relevance !== "low" && (result.highlights?.highlights?.length ?? 0) > 0)
-    .sort((a, b) => rankOf(a.result.relevance) - rankOf(b.result.relevance) || a.index - b.index);
-
-  for (const { result } of candidates) {
+export function pickContext(results: readonly PickableResult[], options: PickOptions = {}): PickedContext | null {
+  const usable: (Candidate & { index: number })[] = [];
+  results.forEach((result, index) => {
     const domain = domainOf(result.url);
-    if (!domain || isExcludedDomain(domain)) continue;
-    for (const passage of result.highlights?.highlights ?? []) {
-      for (const chunk of proseChunks(passage)) {
-        const text = trimToSentences(splitSentences(chunk));
-        if (text) return { text, sourceTitle: cleanTitle(result.title), sourceUrl: result.url, sourceDomain: domain };
-      }
-    }
+    if (domain && !isExcludedDomain(domain)) usable.push({ result, domain, index });
+  });
+  usable.sort((a, b) => rankOf(a.result.relevance) - rankOf(b.result.relevance) || a.index - b.index);
+
+  const groups = [usable.filter(({ result }) => result.relevance !== "low")];
+  if (options.allowLowRelevance) groups.push(usable.filter(({ result }) => result.relevance === "low"));
+
+  for (const group of groups) {
+    const picked = firstPick(group, fromHighlights) ?? (options.allowDescription ? firstPick(group, fromDescription) : null);
+    if (picked) return picked;
   }
   return null;
 }

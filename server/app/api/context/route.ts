@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { getCardContext, unavailableContext } from "@/lib/context";
-import { describe, errorJson, json } from "../_lib/http";
+import { errorJson, json } from "../_lib/http";
 import { requireString } from "../_lib/validate";
 
 export const runtime = "nodejs";
@@ -10,10 +10,13 @@ export const maxDuration = 30;
 /**
  * GET /api/context?eventTicker=&instrumentSymbol=&playerId= -> 200 CardContext
  * 400 missing_params when any of the three is absent or empty.
- * Every other failure answers 200 with available: false, so the card back
- * shows "Trust your gut." and the swipe still works. playerId is required so
- * only the app's users can trigger a lookup; the result is per market, not per
- * player (cached in card_context, see docs/CONTEXT_DEV.md).
+ * Every other case answers 200 with the full CardContext shape, and `kind`
+ * says where the text came from: "web" (live context from Context.dev) or
+ * "market" (the market's own rules, always there). `available` is false only
+ * when the market itself cannot be found. The lookup answers within about 7 s
+ * (see lib/context/index.ts) and logs one line: tier, time, credits.
+ * playerId is required so only the app's users can trigger a lookup; the
+ * result is per market, not per player (cached in card_context).
  */
 export async function GET(req: NextRequest): Promise<Response> {
   const params = req.nextUrl.searchParams;
@@ -24,9 +27,8 @@ export async function GET(req: NextRequest): Promise<Response> {
 
   try {
     return json(await getCardContext(eventTicker, instrumentSymbol));
-  } catch (error) {
-    // getCardContext catches its own failures; this is a last resort.
-    console.error(`[api/context] ${describe(error)}`);
+  } catch {
+    // getCardContext does not throw; this keeps the 200 contract if that ever changes.
     return json(unavailableContext());
   }
 }

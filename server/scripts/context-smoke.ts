@@ -1,36 +1,55 @@
-// Context.dev smoke test for Hunch (docs/CONTEXT_DEV.md). Run from server/:
-//   npx tsx scripts/context-smoke.ts              part 1 (one raw search, saved) then part 2
-//   npx tsx scripts/context-smoke.ts --skip-raw   part 2 only, reusing the saved sample
-// Part 1: ONE raw POST /web/search for a real card's question; the raw response
-// is saved to docs/samples/context-search.json. Part 2: getCardContext (the same
-// code path as GET /api/context) for three real cards from different categories
-// (different series when the feed has fewer categories), then the first one
-// again, which must come back cached.
-// Loads server/.env.local. Prints credits consumed and remaining. Never prints the key.
-// Budget: about 2 credits per lookup; a cold cache costs at most 8 credits per full run.
-import { mkdir, writeFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+// Context smoke test for Hunch (docs/CONTEXT_DEV.md, "Always-on context"). Run from server/:
+//   npx tsx scripts/context-smoke.ts                  ten real cards, each looked up twice
+//   npx tsx scripts/context-smoke.ts --clear-misses   first delete the stored "nothing found" rows
+//   npx tsx scripts/context-smoke.ts --budget=12      credits this run may spend (default 24)
+// Ten real cards from as many categories as the feed offers go through
+// resolveCardContext (the same code path as GET /api/context) twice. Passes
+// when 10 of 10 are available and every second call answers in under 1 s.
+// Credits: a search costs 0 to 2 credits (nothing when Context.dev times out),
+// and a card that is not stored yet runs one or two searches, so a fully cold
+// run of ten cards spends 40 credits at most; a stored card spends none. The
+// run budget is enforced by the real credit guard: the daily cap is lowered
+// for this process to "used today plus budget", so once the budget is spent the
+// remaining cards answer from the market rules (tier 3).
+// Loads server/.env.local. Prints credits used and remaining. Never prints the key.
 import { config as loadEnv } from "dotenv";
 
 loadEnv({ path: "/Users/nishkadesai/hunch/server/.env.local", quiet: true });
 
 import { fetchActiveCards } from "../lib/gemini/feed";
 import type { CardContext, CardQuote } from "../lib/types";
-import { freshnessFor, parseSearchResponse, queryFor, recordRunUsage, runUsage, searchRaw } from "../lib/context/client";
-import { getCardContext, laDayOf, MAX_TEXT_LENGTH, mentionsOdds, readUsage } from "../lib/context";
+import {
+  MARKET_SOURCE_TITLE,
+  MAX_MARKET_TEXT_LENGTH,
+  MAX_TEXT_LENGTH,
+  clearCachedMisses,
+  dailyCreditCap,
+  hasContextKey,
+  laDayOf,
+  mentionsOdds,
+  readUsage,
+  resolveCardContext,
+  runUsage,
+  type ContextLookup,
+} from "../lib/context";
 
-const SAMPLES_DIR = fileURLToPath(new URL("../../docs/samples/", import.meta.url));
-const SAMPLE_FILE = "context-search.json";
-const SKIP_RAW = process.argv.includes("--skip-raw");
-const CARD_COUNT = 3;
-/** Stop before any further call once the key reports fewer credits than this. */
-const STOP_BELOW_REMAINING = 50;
-/** Hard ceiling for one run of this script. */
-const RUN_BUDGET = 12;
+const CLEAR_MISSES = process.argv.includes("--clear-misses");
+const CARD_COUNT = 10;
+/** Categories the live check missed; each gets a card when the feed has one. */
+const WANTED = ["Culture", "Crypto", "Business", "Weather", "Tech", "Sports"];
+const DEFAULT_BUDGET = 24;
+const SECOND_CALL_LIMIT_MS = 1_000;
+/** Cards closing sooner than this are left out of the run. */
+const MIN_TIME_LEFT_MS = 10 * 60_000;
+
+function budgetArg(): number {
+  const raw = process.argv.find((arg) => arg.startsWith("--budget="))?.slice("--budget=".length);
+  const value = Number(raw);
+  return raw !== undefined && Number.isInteger(value) && value >= 0 ? value : DEFAULT_BUDGET;
+}
 
 function describeError(error: unknown): string {
-  if (error instanceof Error) return `${error.name}: ${error.message}`;
-  return String(error);
+  return error instanceof Error ? `${error.name}: ${error.message}` : String(error);
 }
 
 function expect(condition: boolean, step: string, detail: string): void {
@@ -39,141 +58,162 @@ function expect(condition: boolean, step: string, detail: string): void {
 
 /** The letters-and-digits prefix of a ticker before its date stamp ("BTC05M2610112230" gives "BTC05M"). */
 function tickerPrefix(ticker: string): string {
-  return ticker.replace(/\d{6,}$/, "");
+  return ticker.replace(/\d{6,}.*$/, "");
 }
 
 /**
- * Up to `count` cards: first one per category, then (when the feed has fewer
- * categories than that) one per ticker prefix not yet used, so the lookups
- * still hit different cache keys.
+ * Ten cards: one per wanted category first, then one per other category, then
+ * further rounds over all categories. No event twice, and no ticker prefix
+ * twice inside a category while it has others, so the lookups hit different
+ * cache keys.
  */
 function pickCards(cards: readonly CardQuote[], count: number): CardQuote[] {
+  // The feed can be two minutes old; a card about to close would be closed by the time it is looked up.
+  const open = cards.filter((card) => new Date(card.expiresAt).getTime() - Date.now() > MIN_TIME_LEFT_MS);
+  const byCategory = new Map<string, CardQuote[]>();
+  for (const card of open) byCategory.set(card.category, [...(byCategory.get(card.category) ?? []), card]);
+  const order = [...WANTED.filter((c) => byCategory.has(c)), ...[...byCategory.keys()].filter((c) => !WANTED.includes(c))];
+
   const picked: CardQuote[] = [];
-  const categories = new Set<string>();
+  const events = new Set<string>();
   const prefixes = new Set<string>();
-  for (const card of cards) {
-    if (picked.length >= count || categories.has(card.category)) continue;
-    categories.add(card.category);
-    prefixes.add(tickerPrefix(card.eventTicker));
-    picked.push(card);
-  }
-  for (const card of cards) {
-    if (picked.length >= count) break;
-    const prefix = tickerPrefix(card.eventTicker);
-    if (prefixes.has(prefix)) continue;
-    prefixes.add(prefix);
-    picked.push(card);
+  for (const distinctPrefix of [true, false]) {
+    let added = true;
+    while (picked.length < count && added) {
+      added = false;
+      for (const category of order) {
+        if (picked.length >= count) break;
+        const next = (byCategory.get(category) ?? []).find(
+          (card) => !events.has(card.eventTicker) && !(distinctPrefix && prefixes.has(`${category}|${tickerPrefix(card.eventTicker)}`)),
+        );
+        if (!next) continue;
+        events.add(next.eventTicker);
+        prefixes.add(`${category}|${tickerPrefix(next.eventTicker)}`);
+        picked.push(next);
+        added = true;
+      }
+    }
   }
   return picked;
 }
 
-function checkRemaining(): void {
-  const remaining = runUsage().lastCreditsRemaining;
-  if (remaining !== null && remaining < STOP_BELOW_REMAINING) {
-    throw new Error(`credits_remaining is ${remaining} (below ${STOP_BELOW_REMAINING}); stopping. Ask the human to add credits.`);
-  }
-  const used = runUsage().creditsConsumed;
-  if (used > RUN_BUDGET) throw new Error(`this run used ${used} credits, more than the ${RUN_BUDGET} allowed; stopping`);
-}
-
-function describeContext(ctx: CardContext): string {
-  if (!ctx.available) return `available=false cached=${ctx.cached} (card back says "Trust your gut.")`;
-  return `cached=${ctx.cached} source=${ctx.sourceDomain}\n    "${ctx.text}"\n    ${ctx.sourceTitle ?? ""} ${ctx.sourceUrl}`;
-}
-
-function checkContextShape(ctx: CardContext, step: string): void {
-  expect(typeof ctx.available === "boolean" && typeof ctx.cached === "boolean", step, "available and cached must be booleans");
-  if (ctx.available) {
-    expect(typeof ctx.text === "string" && ctx.text.length > 0, step, "available context must have text");
-    expect(ctx.text!.length <= MAX_TEXT_LENGTH, step, `text is ${ctx.text!.length} chars, more than ${MAX_TEXT_LENGTH}`);
-    expect(!mentionsOdds(ctx.text!), step, "text mentions odds or a betting site");
-    expect(typeof ctx.sourceUrl === "string" && /^https?:\/\//.test(ctx.sourceUrl), step, "source url must be http(s)");
-    expect(typeof ctx.sourceDomain === "string" && ctx.sourceDomain.length > 0, step, "source domain required");
+function checkShape(ctx: CardContext, step: string): void {
+  expect(ctx.available === true, step, "context must be available for a live card");
+  expect(ctx.kind === "web" || ctx.kind === "market", step, `kind is ${String(ctx.kind)}`);
+  expect(typeof ctx.cached === "boolean", step, "cached must be a boolean");
+  expect(typeof ctx.text === "string" && ctx.text.trim().length > 0, step, "text must not be empty");
+  const text = ctx.text ?? "";
+  expect(!mentionsOdds(text), step, "text mentions odds or a betting site");
+  expect(!/<[a-z/][^>]*>|\]\(|\*\*/i.test(text), step, "text carries HTML or markdown");
+  if (ctx.kind === "web") {
+    expect(text.length <= MAX_TEXT_LENGTH, step, `web text is ${text.length} characters, more than ${MAX_TEXT_LENGTH}`);
+    expect(typeof ctx.sourceUrl === "string" && /^https?:\/\//.test(ctx.sourceUrl), step, "web source url must be http(s)");
+    expect(typeof ctx.sourceDomain === "string" && ctx.sourceDomain.length > 0, step, "web source domain required");
   } else {
-    expect(ctx.text === null && ctx.sourceTitle === null && ctx.sourceUrl === null && ctx.sourceDomain === null, step, "unavailable context must have null fields");
+    expect(text.length <= MAX_MARKET_TEXT_LENGTH, step, `market text is ${text.length} characters, more than ${MAX_MARKET_TEXT_LENGTH}`);
+    expect(ctx.sourceTitle === MARKET_SOURCE_TITLE, step, `market source title is "${ctx.sourceTitle}"`);
+    expect(ctx.sourceDomain === null, step, "market source domain must be null");
+    expect(ctx.sourceUrl === null || /^https:\/\//.test(ctx.sourceUrl), step, "market source url must be null or https");
   }
 }
 
-async function partOneRawSearch(cards: readonly CardQuote[]): Promise<void> {
-  console.log("\n== part 1: one raw POST /web/search, saved to docs/samples/context-search.json");
-  // Prefer a non-crypto card so the sample shows news highlights; crypto price windows have little coverage.
-  const card = cards.find((c) => c.category !== "Crypto") ?? cards[0];
-  if (!card) throw new Error("the feed has no cards; nothing to search for");
-  const query = queryFor(card.question);
-  const freshness = freshnessFor(card.lane);
-  console.log(`card ${card.eventTicker} / ${card.instrumentSymbol} [${card.category}, ${card.lane}]`);
-  console.log(`query "${query}" freshness=${freshness}`);
-  const raw = await searchRaw(query, freshness);
-  await mkdir(SAMPLES_DIR, { recursive: true });
-  await writeFile(`${SAMPLES_DIR}${SAMPLE_FILE}`, `${JSON.stringify(raw, null, 2)}\n`);
-  console.log(`saved docs/samples/${SAMPLE_FILE}`);
-  const parsed = parseSearchResponse(raw);
-  recordRunUsage(parsed);
+interface Row {
+  card: CardQuote;
+  first: ContextLookup;
+  second: ContextLookup;
+}
+
+function cell(value: string | number, width: number): string {
+  const text = String(value);
+  return text.length >= width ? text.slice(0, width) : text.padEnd(width);
+}
+
+/** How the first call got its answer, for the table. */
+function routeOf(first: ContextLookup): string {
+  if (first.context.kind === "web") return first.context.cached ? "cached" : "searched";
+  if (first.context.cached) return "cached miss";
+  return first.searches > 0 ? "web miss" : "no search";
+}
+
+function printTable(rows: readonly Row[]): void {
+  console.log(`\n${cell("category", 12)} ${cell("tier", 4)} ${cell("kind", 6)} ${cell("ms", 5)} ${cell("2nd ms", 6)} ${cell("route", 11)} text (first 80 characters)`);
+  for (const { card, first, second } of rows) {
+    const text = (first.context.text ?? "").slice(0, 80);
+    console.log(`${cell(card.category, 12)} ${cell(first.tier, 4)} ${cell(first.context.kind, 6)} ${cell(first.ms, 5)} ${cell(second.ms, 6)} ${cell(routeOf(first), 11)} ${text}`);
+  }
   console.log(
-    `request_id=${parsed.requestId ?? "none"} credits_consumed=${parsed.creditsConsumed} credits_remaining=${parsed.creditsRemaining ?? "unknown"} partial=${parsed.partial} results=${parsed.results.length}`,
+    "route: searched = a web tier answered now; cached = a stored web line; web miss = the web was searched and gave nothing usable; cached miss = a stored miss; no search = the web tiers were skipped (credit guard, no key, or a closed market)",
   );
-  for (const r of parsed.results) {
-    const n = r.highlights?.highlights?.length ?? 0;
-    console.log(`  [${r.relevance ?? "?"}] ${r.url} highlights=${n} title="${r.title ?? ""}"`);
-  }
-  checkRemaining();
-}
-
-async function partTwoCards(cards: readonly CardQuote[]): Promise<void> {
-  console.log(`\n== part 2: getCardContext for ${CARD_COUNT} real cards, then the first again`);
-  const picked = pickCards(cards, CARD_COUNT);
-  expect(picked.length === CARD_COUNT, "part 2", `only ${picked.length} distinct cards in the feed`);
-
-  const results: { card: CardQuote; ctx: CardContext }[] = [];
-  for (const card of picked) {
-    console.log(`\ncard ${card.eventTicker} / ${card.instrumentSymbol} [${card.category}, ${card.lane}]`);
-    console.log(`  question "${card.question}"`);
-    const ctx = await getCardContext(card.eventTicker, card.instrumentSymbol);
-    checkContextShape(ctx, `context for ${card.eventTicker}`);
-    console.log(`  ${describeContext(ctx)}`);
-    results.push({ card, ctx });
-    checkRemaining();
-  }
-  const available = results.filter((r) => r.ctx.available);
-  expect(available.length > 0, "part 2", "no card returned context; check the Context.dev results and pickContext");
-
-  // Second call for the first card that produced a result: must be served from card_context.
-  const again = (available[0] ?? results[0]).card;
-  console.log(`\nagain ${again.eventTicker} / ${again.instrumentSymbol} (expect cached: true)`);
-  const before = runUsage().creditsConsumed;
-  const second = await getCardContext(again.eventTicker, again.instrumentSymbol);
-  checkContextShape(second, "cached call");
-  console.log(`  ${describeContext(second)}`);
-  expect(second.cached === true, "cached call", `cached=${second.cached}`);
-  expect(runUsage().creditsConsumed === before, "cached call", "the cached call spent credits");
-  const firstCtx = (available[0] ?? results[0]).ctx;
-  expect(second.text === firstCtx.text && second.sourceUrl === firstCtx.sourceUrl, "cached call", "cached text differs from the first answer");
-
-  console.log("\nsummary:");
-  for (const { card, ctx } of results) {
-    console.log(`  [${card.category}/${card.lane}] ${card.eventTicker}: ${ctx.available ? `"${ctx.text}" (${ctx.sourceDomain})` : "no context"}`);
-  }
 }
 
 async function main(): Promise<void> {
-  if (!process.env.CONTEXT_DEV_API_KEY) throw new Error("CONTEXT_DEV_API_KEY is missing in server/.env.local");
   console.log(`now ${new Date().toISOString()}`);
+  if (!hasContextKey()) console.log("CONTEXT_DEV_API_KEY is not set: the web tiers are skipped and every card answers from the market rules");
+
+  const day = laDayOf(new Date());
+  const before = await readUsage(day);
+  const budget = budgetArg();
+  const cap = Math.min(dailyCreditCap(), before.creditsUsed + budget);
+  process.env.CONTEXT_DEV_DAILY_CREDIT_CAP = String(Math.max(1, cap));
+  console.log(
+    `context_usage ${day} before: calls=${before.calls} credits_used=${before.creditsUsed} last_credits_remaining=${before.lastCreditsRemaining ?? "null"}; run budget ${budget} credits (guard cap for this process: ${cap})`,
+  );
+
+  if (CLEAR_MISSES) console.log(`--clear-misses: deleted ${await clearCachedMisses()} card_context row(s) with no text`);
 
   const cards = await fetchActiveCards();
   const categories = [...new Set(cards.map((c) => c.category))];
   console.log(`feed: ${cards.length} cards, ${categories.length} categories: ${categories.join(", ")}`);
+  const missing = WANTED.filter((c) => !categories.includes(c));
+  if (missing.length > 0) console.log(`not in the feed right now: ${missing.join(", ")}`);
 
-  if (SKIP_RAW) console.log("\n== part 1 skipped (--skip-raw)");
-  else await partOneRawSearch(cards);
+  const picked = pickCards(cards, CARD_COUNT);
+  expect(picked.length === CARD_COUNT, "card selection", `only ${picked.length} distinct events in the feed`);
 
-  await partTwoCards(cards);
+  const rows: Row[] = [];
+  for (const card of picked) {
+    console.log(`\ncard ${card.eventTicker} / ${card.instrumentSymbol} [${card.category}, ${card.lane}]\n  question "${card.question}"`);
+    const first = await resolveCardContext(card.eventTicker, card.instrumentSymbol);
+    checkShape(first.context, `first call for ${card.eventTicker}`);
+    const spentBefore = runUsage().creditsConsumed;
+    const second = await resolveCardContext(card.eventTicker, card.instrumentSymbol);
+    checkShape(second.context, `second call for ${card.eventTicker}`);
+    expect(runUsage().creditsConsumed === spentBefore, `second call for ${card.eventTicker}`, "the second call spent credits");
+    expect(second.context.kind === first.context.kind, `second call for ${card.eventTicker}`, `kind changed from ${first.context.kind} to ${second.context.kind}`);
+    if (first.context.kind === "web") {
+      expect(second.context.cached === true, `second call for ${card.eventTicker}`, "a web line must come back cached");
+      expect(second.context.text === first.context.text, `second call for ${card.eventTicker}`, "cached text differs from the first answer");
+    }
+    console.log(
+      `  tier ${first.tier} ${first.context.kind} in ${first.ms} ms (cached=${first.context.cached}, searches=${first.searches}, credits=${first.credits}); again in ${second.ms} ms (cached=${second.context.cached})`,
+    );
+    console.log(`  "${first.context.text}"\n  ${first.context.sourceTitle ?? ""}${first.context.sourceUrl ? ` ${first.context.sourceUrl.slice(0, 100)}` : ""}`);
+    rows.push({ card, first, second });
+  }
+
+  printTable(rows);
+
+  const web = rows.filter((r) => r.first.context.kind === "web").length;
+  const slowest = rows.reduce((a, b) => (b.first.ms > a.first.ms ? b : a));
+  const slowestSecond = rows.reduce((a, b) => (b.second.ms > a.second.ms ? b : a));
+  console.log(`\navailable: ${rows.filter((r) => r.first.context.available).length} of ${rows.length}; web ${web}, market ${rows.length - web}`);
+  console.log(`categories covered: ${[...new Set(rows.map((r) => r.card.category))].join(", ")}`);
+  console.log(`slowest first call: ${slowest.first.ms} ms (${slowest.card.category}, tier ${slowest.first.tier}); slowest second call: ${slowestSecond.second.ms} ms`);
 
   const usage = runUsage();
-  const day = laDayOf(new Date());
-  const today = await readUsage(day);
-  console.log(`\ncredits used in this run: ${usage.creditsConsumed} over ${usage.calls} call(s); credits remaining: ${usage.lastCreditsRemaining ?? "unknown"}`);
-  console.log(`context_usage ${day}: calls=${today.calls} credits_used=${today.creditsUsed} last_credits_remaining=${today.lastCreditsRemaining ?? "null"}`);
-  expect(usage.creditsConsumed <= RUN_BUDGET, "budget", `used ${usage.creditsConsumed} credits, more than the ${RUN_BUDGET} allowed`);
+  const after = await readUsage(day);
+  const sent = rows.reduce((sum, r) => sum + r.first.searches + r.second.searches, 0);
+  console.log(
+    `credits used in this run: ${usage.creditsConsumed} (${sent} search(es) sent, ${usage.calls} answered); credits remaining: ${usage.lastCreditsRemaining ?? after.lastCreditsRemaining ?? "unknown"}`,
+  );
+  console.log(
+    `context_usage ${day} after: calls=${after.calls} credits_used=${after.creditsUsed} last_credits_remaining=${after.lastCreditsRemaining ?? "null"} (the table is shared with production, so its change can exceed this run)`,
+  );
+
+  expect(rows.every((r) => r.first.context.available && r.second.context.available), "availability", "not every card had context");
+  const slow = rows.filter((r) => r.second.ms >= SECOND_CALL_LIMIT_MS);
+  expect(slow.length === 0, "second calls", `${slow.length} took ${SECOND_CALL_LIMIT_MS} ms or more (slowest ${slowestSecond.second.ms} ms)`);
+  expect(usage.creditsConsumed <= budget + 2, "budget", `used ${usage.creditsConsumed} credits against a budget of ${budget}`);
   console.log("\nCONTEXT SMOKE OK");
 }
 

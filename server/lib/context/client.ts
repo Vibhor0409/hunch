@@ -5,8 +5,23 @@
 import type { Lane } from "../types";
 
 export const CONTEXT_DEV_BASE_URL = "https://api.context.dev/v1";
-/** Abort the search after this long. The route budget is 30 s and Gemini lookups use part of it. */
-export const SEARCH_TIMEOUT_MS = 10_000;
+/**
+ * Time budget per search (docs/CONTEXT_DEV.md, "Always-on context"). The API is
+ * asked to answer within `apiTimeoutMs` with whatever it has ("return-partial"),
+ * and the request is aborted at `abortMs` when it still has not answered.
+ */
+export interface SearchBudget {
+  apiTimeoutMs: number;
+  abortMs: number;
+}
+/** Tier 1 (exact question): at most 4.5 s. */
+export const TIER1_BUDGET: SearchBudget = { apiTimeoutMs: 4_000, abortMs: 4_500 };
+/** Tier 2 (broad subject): at most 3.5 s. */
+export const TIER2_BUDGET: SearchBudget = { apiTimeoutMs: 3_000, abortMs: 3_500 };
+/** The gap kept between the API's own timeout and the abort. */
+const ABORT_MARGIN_MS = 500;
+/** Freshness window of the broad tier. */
+export const BROAD_FRESHNESS = "last_month" as const;
 /** The API minimum; 1 credit per 10 results plus 1 for highlights, about 2 credits per lookup. */
 export const NUM_RESULTS = 10;
 /** Query length limit of the API. */
@@ -66,17 +81,38 @@ export function freshnessFor(lane: Lane): Freshness {
   return lane === "live" ? "last_24_hours" : "last_week";
 }
 
-/** The search query for a card: its question plus "latest news", within the API limit. */
-export function queryFor(question: string): string {
-  const suffix = " latest news";
+function withSuffix(text: string, suffix: string): string {
   const room = MAX_QUERY_LENGTH - suffix.length;
-  const base = question.replace(/\s+/g, " ").trim();
+  const base = text.replace(/\s+/g, " ").trim();
   const clipped = base.length > room ? base.slice(0, room).trimEnd() : base;
   return `${clipped}${suffix}`;
 }
 
-/** The exact request body from docs/CONTEXT_DEV.md. Shared by the route and the smoke script. */
-export function searchBody(query: string, freshness: Freshness): Record<string, unknown> {
+/** Tier 1 query: the card's question plus "latest news", within the API limit. */
+export function queryFor(question: string): string {
+  return withSuffix(question, " latest news");
+}
+
+/** Tier 2 query: the market's subject (see subject.ts) plus "news", within the API limit. */
+export function broadQueryFor(subject: string): string {
+  return withSuffix(subject, " news");
+}
+
+/**
+ * The search budget that fits in `remainingMs`: the tier's own budget, shortened
+ * when less time is left. Null when too little is left for a useful answer.
+ */
+export function budgetWithin(budget: SearchBudget, remainingMs: number, minAbortMs = 1_500): SearchBudget | null {
+  const abortMs = Math.min(budget.abortMs, Math.floor(remainingMs));
+  if (abortMs < minAbortMs) return null;
+  return { abortMs, apiTimeoutMs: Math.min(budget.apiTimeoutMs, abortMs - ABORT_MARGIN_MS) };
+}
+
+/**
+ * The request body from docs/CONTEXT_DEV.md. Shared by both web tiers; only
+ * the query, the freshness and the API timeout differ between them.
+ */
+export function searchBody(query: string, freshness: Freshness, apiTimeoutMs: number = TIER1_BUDGET.apiTimeoutMs): Record<string, unknown> {
   return {
     query,
     numResults: NUM_RESULTS,
@@ -84,9 +120,14 @@ export function searchBody(query: string, freshness: Freshness): Record<string, 
     excludeDomains: [...EXCLUDED_DOMAINS],
     highlightsOptions: { enabled: true, maxCharacters: 800 },
     descriptionMaxCharacters: 300,
-    timeoutOpts: { milliseconds: 8000, behavior: "return-partial" },
+    timeoutOpts: { milliseconds: apiTimeoutMs, behavior: "return-partial" },
     tags: ["hunch", "card-context"],
   };
+}
+
+/** Whether the Context.dev key is configured. Without it the web tiers are skipped. */
+export function hasContextKey(): boolean {
+  return (process.env.CONTEXT_DEV_API_KEY ?? "").trim() !== "";
 }
 
 function requireKey(): string {
@@ -98,20 +139,19 @@ function requireKey(): string {
 }
 
 /**
- * One raw POST /web/search. Returns the parsed JSON body as unknown; the smoke
- * script saves it to docs/samples/context-search.json. Throws ContextDevError
- * on a non-2xx status (none of those are charged) and a plain Error on a
- * network failure or the 10 second abort.
+ * One raw POST /web/search. Returns the parsed JSON body as unknown. Throws
+ * ContextDevError on a non-2xx status (none of those are charged) and a plain
+ * Error on a network failure or when the budget's abort fires.
  */
-export async function searchRaw(query: string, freshness: Freshness): Promise<unknown> {
+export async function searchRaw(query: string, freshness: Freshness, budget: SearchBudget = TIER1_BUDGET): Promise<unknown> {
   const key = requireKey();
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), SEARCH_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), budget.abortMs);
   try {
     const res = await fetch(`${CONTEXT_DEV_BASE_URL}/web/search`, {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify(searchBody(query, freshness)),
+      body: JSON.stringify(searchBody(query, freshness, budget.apiTimeoutMs)),
       signal: controller.signal,
     });
     if (!res.ok) throw new ContextDevError(res.status);
@@ -198,14 +238,12 @@ export function runUsage(): RunUsage {
 }
 
 /**
- * One search with the documented body, parsed. Logs request id and credits
- * (never the key or the query) and updates the in-process tally.
+ * One search with the documented body, parsed, within `budget`. Updates the
+ * in-process tally. Logs nothing: getCardContext writes the one log line per
+ * lookup (tier, time, credits), and the key and the query are never logged.
  */
-export async function searchContext(query: string, freshness: Freshness): Promise<SearchResponse> {
-  const parsed = parseSearchResponse(await searchRaw(query, freshness));
+export async function searchContext(query: string, freshness: Freshness, budget: SearchBudget = TIER1_BUDGET): Promise<SearchResponse> {
+  const parsed = parseSearchResponse(await searchRaw(query, freshness, budget));
   recordRunUsage(parsed);
-  console.log(
-    `[context] request_id=${parsed.requestId ?? "none"} credits_consumed=${parsed.creditsConsumed} credits_remaining=${parsed.creditsRemaining ?? "unknown"} results=${parsed.results.length}${parsed.partial ? " partial" : ""}`,
-  );
   return parsed;
 }

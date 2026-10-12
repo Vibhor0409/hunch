@@ -35,7 +35,7 @@ const REQUEST_TIMEOUT_MS = 20_000;
 const LANES: readonly LaneFilter[] = ["foryou", "live", "tomorrow", "week", "later"];
 const CARD_LANES: readonly string[] = ["live", "tomorrow", "week", "later"];
 const CARD_KEYS = ["category", "eventTicker", "expiresAt", "instrumentSymbol", "lane", "question", "tradable"];
-const CONTEXT_KEYS = ["available", "cached", "sourceDomain", "sourceTitle", "sourceUrl", "text"];
+const CONTEXT_KEYS = ["available", "cached", "kind", "sourceDomain", "sourceTitle", "sourceUrl", "text"];
 const MAX_FEED_CARDS = 20;
 const RECEIPT_STATUSES: readonly string[] = ["filled", "open", "cancelled", "not_placed", "error"];
 const RESULTS: readonly string[] = ["pending", "won", "lost"];
@@ -354,7 +354,11 @@ describe.skipIf(!process.env.API_BASE_URL)("Hunch API happy path", () => {
         console.warn(`[api happy] ${note}`);
         return ctx.skip(note);
       }
-      expect(second.cached, "the second identical call is served from the cache").toBe(true);
+      // Always-on context: a web answer (or a cached web miss) is served from the cache on the second call.
+      // When the credit guard is on or the key is missing, market rules are rebuilt on each call and are not cached.
+      expect(["web", "market"], "kind").toContain(second.kind);
+      expect(second.available, "context is always available once the market is found").toBe(true);
+      if (second.kind === "web") expect(second.cached, "a web answer is served from the cache on the second call").toBe(true);
       expect(second.available, "cached answer agrees on availability").toBe(first.available);
       expect(second.text, "cached answer carries the same text").toBe(first.text);
     },

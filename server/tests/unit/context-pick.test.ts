@@ -123,6 +123,141 @@ describe("pickContext selection", () => {
   });
 });
 
+describe("pickContext with allowDescription (broad tier)", () => {
+  const SNIPPET = "The central bank held its main rate at 4.5% on Thursday. Officials gave no date for a cut and said ...";
+
+  it("ignores descriptions by default", () => {
+    expect(pickContext([result(null, { description: SNIPPET })])).toBeNull();
+  });
+
+  it("lets a description stand in when highlights are null or empty", () => {
+    for (const highlights of [null, []]) {
+      const picked = pickContext([result(highlights, { description: SNIPPET, title: "Rates on hold" })], { allowDescription: true });
+      expect(picked).toEqual({
+        text: "The central bank held its main rate at 4.5% on Thursday.",
+        sourceTitle: "Rates on hold",
+        sourceUrl: "https://www.example.com/story",
+        sourceDomain: "example.com",
+      });
+    }
+    expect(pickContext([{ url: "https://x.example.com/", relevance: "high", description: SNIPPET }], { allowDescription: true })?.sourceDomain).toBe("x.example.com");
+  });
+
+  it("drops the piece a snippet cut off and keeps only whole sentences", () => {
+    const cutOff = "On the Multi Commodity Exchange, copper contracts for October delivery went up by Rs 3.80 in a business turnover ...";
+    expect(pickContext([result(null, { description: cutOff })], { allowDescription: true })).toBeNull();
+    const midCut = "… and the vote was close. The committee will meet again on Friday to settle the matter. Members said …";
+    expect(pickContext([result(null, { description: midCut })], { allowDescription: true })?.text).toBe(
+      "The committee will meet again on Friday to settle the matter.",
+    );
+  });
+
+  it("skips number strips inside a description", () => {
+    const description = "A complete Copper Continuous Contract futures overview by MarketWatch. $6.6 $6.7 $6.8 $6.9. Visit a quote page and your recently viewed tickers will be ...";
+    expect(pickContext([result(null, { description })], { allowDescription: true })?.text).toBe(
+      "A complete Copper Continuous Contract futures overview by MarketWatch.",
+    );
+  });
+
+  it("skips titles and list entries inside a description", () => {
+    // From a real response for "The Game Awards: 2026 Game of the Year news".
+    const list = "Gears of War: E-Day. Star Wars: Zero Company. Pragmata. Saros. Onimusha: Way of the Sword. All these games are ...";
+    expect(pickContext([result(null, { description: list })], { allowDescription: true })).toBeNull();
+    const mixed = "Game Awards December 10th 2026. The Game Awards will stream for free on December 10 across every major platform.";
+    expect(pickContext([result(null, { description: mixed })], { allowDescription: true })?.text).toBe(
+      "The Game Awards will stream for free on December 10 across every major platform.",
+    );
+  });
+
+  it("skips tag lists inside a description", () => {
+    // From a real response for "When will Stripe announce an IPO ... latest news".
+    const tags = "When the company first announced FIUSD last year Mike Lyons was the company's ... Stripe payments private commerce finance stock offers IPO Oct. 1, 2026.";
+    expect(pickContext([result(null, { description: tags })], { allowDescription: true })).toBeNull();
+  });
+
+  it("does not take a description from a site of posts and comments, but still takes its highlights", () => {
+    const opinion = "GTA VI will come out right when the Game Awards 2026 will come out, so it is the winner for sure.";
+    for (const url of ["https://www.reddit.com/r/TheGameAwards/comments/1", "https://www.instagram.com/p/abc/", "https://m.facebook.com/x/posts/1"]) {
+      expect(pickContext([result(null, { description: opinion, url })], { allowDescription: true, allowLowRelevance: true })).toBeNull();
+      expect(pickContext([result([RAIN], { description: opinion, url })], { allowDescription: true })?.text).toBe(RAIN);
+    }
+    expect(pickContext([result(null, { description: opinion, url: "https://www.polygon.com/goty" })], { allowDescription: true })?.text).toBe(opinion);
+  });
+
+  it("prefers any highlight over any description among results of usable relevance", () => {
+    const picked = pickContext([result(null, { description: SNIPPET, relevance: "high" }), result([MATCH], { url: "https://news.example.org/a" })], {
+      allowDescription: true,
+    });
+    expect(picked?.text).toBe(MATCH);
+    expect(picked?.sourceDomain).toBe("news.example.org");
+  });
+
+  it("falls back to a description when the highlights hold no usable sentence", () => {
+    const picked = pickContext([result([CME_PRICE_STRIP], { description: SNIPPET })], { allowDescription: true });
+    expect(picked?.text).toBe("The central bank held its main rate at 4.5% on Thursday.");
+  });
+
+  it("keeps the odds filter, the excluded domains and the 220 character trim", () => {
+    const options = { allowDescription: true, allowLowRelevance: true };
+    expect(pickContext([result(null, { description: ODDS })], options)).toBeNull();
+    expect(pickContext([result(null, { description: `${ODDS} ${MATCH}` })], options)?.text).toBe(MATCH);
+    expect(pickContext([result(null, { description: RAIN, url: "https://www.polymarket.com/event/x" })], options)).toBeNull();
+    expect(pickContext([result([RAIN], { relevance: "low", url: "https://sportsbook.draftkings.com/x" })], options)).toBeNull();
+    const long = `The council said that ${"the plan for the old harbor ".repeat(10)}is on hold. The mayor said that ${"the vote on the new bridge ".repeat(10)}is next.`;
+    expect(long.length).toBeGreaterThan(2 * MAX_TEXT_LENGTH);
+    const picked = pickContext([result(null, { description: long })], options);
+    expect(picked).not.toBeNull();
+    expect(picked!.text.length).toBeLessThanOrEqual(MAX_TEXT_LENGTH);
+    expect(mentionsOdds(picked!.text)).toBe(false);
+  });
+});
+
+describe("pickContext with allowLowRelevance (broad tier)", () => {
+  it("accepts a low relevance result when nothing else gives a line", () => {
+    const picked = pickContext([result([RAIN], { relevance: "low" })], { allowLowRelevance: true });
+    expect(picked?.text).toBe(RAIN);
+  });
+
+  it("uses low relevance only as a last resort, after medium and high", () => {
+    const options = { allowLowRelevance: true };
+    const picked = pickContext([result([RAIN], { relevance: "low" }), result([MATCH], { url: "https://news.example.org/a" })], options);
+    expect(picked?.text).toBe(MATCH);
+    const unrated = pickContext([result([RAIN], { relevance: "low" }), result([MATCH], { relevance: null })], options);
+    expect(unrated?.text).toBe(MATCH);
+  });
+
+  it("prefers a medium description over a low highlight", () => {
+    const picked = pickContext([result([RAIN], { relevance: "low" }), result(null, { description: MATCH, url: "https://news.example.org/a" })], {
+      allowDescription: true,
+      allowLowRelevance: true,
+    });
+    expect(picked?.text).toBe(MATCH);
+  });
+
+  it("tries low highlights, then low descriptions", () => {
+    const options = { allowDescription: true, allowLowRelevance: true };
+    const lows = [result(null, { relevance: "low", description: MATCH }), result([RAIN], { relevance: "low", url: "https://weather.example.com/" })];
+    expect(pickContext(lows, options)?.text).toBe(RAIN);
+    expect(pickContext([lows[0]!], options)?.text).toBe(MATCH);
+    expect(pickContext([lows[0]!], { allowLowRelevance: true })).toBeNull();
+  });
+
+  it("still returns null when every low result is odds talk", () => {
+    expect(pickContext([result([ODDS], { relevance: "low", description: ODDS })], { allowDescription: true, allowLowRelevance: true })).toBeNull();
+  });
+});
+
+describe("pickContext on the saved sample with the broad options", () => {
+  it("returns a safe line from one of the sample's results", () => {
+    const picked = pickContext(sample.results, { allowDescription: true, allowLowRelevance: true });
+    expect(picked).not.toBeNull();
+    expect(picked!.text.length).toBeLessThanOrEqual(MAX_TEXT_LENGTH);
+    expect(mentionsOdds(picked!.text)).toBe(false);
+    expect(sample.results.map((r) => r.url)).toContain(picked!.sourceUrl);
+    expect(EXCLUDED_DOMAINS).not.toContain(picked!.sourceDomain);
+  });
+});
+
 describe("trimToSentences", () => {
   const s1 = "The central bank held its main rate at 4.5% on Thursday, as most economists had expected."; // 90
   const s2 = "Officials said inflation is cooling but still above target, and they gave no date for a cut."; // 93

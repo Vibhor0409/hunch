@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 import sample from "../fixtures/context-search.json";
-import { EXCLUDED_DOMAINS, freshnessFor, parseSearchResponse, queryFor, searchBody } from "../../lib/context/client";
+import {
+  BROAD_FRESHNESS,
+  EXCLUDED_DOMAINS,
+  TIER1_BUDGET,
+  TIER2_BUDGET,
+  budgetWithin,
+  freshnessFor,
+  parseSearchResponse,
+  queryFor,
+  searchBody,
+} from "../../lib/context/client";
 import {
   DEFAULT_DAILY_CREDIT_CAP,
   DEFAULT_TTL_MS,
@@ -69,6 +79,23 @@ describe("cacheKeyFor", () => {
     expect(cacheKeyFor(undefined, "X")).toBe("X");
     expect(cacheKeyFor("  ", "X")).toBe("X");
   });
+
+  it("shares a series between events that differ only by their date stamp", () => {
+    expect(cacheKeyFor("SOL05M", "SOL05M2610112350")).toBe("SOL05M");
+    expect(cacheKeyFor("COPPER", "COPPER2610122100")).toBe("COPPER");
+    // Hourly ladders carry the short ticker and the longer series name.
+    expect(cacheKeyFor("XRP1H", "XRP2610122100")).toBe("XRP1H");
+    expect(cacheKeyFor(" BTC1H ", "BTC2610120000")).toBe("BTC1H");
+  });
+
+  it("keeps the ticker when the series spans different subjects", () => {
+    // WXHIGH covers every city: Austin's weather must not answer for Washington.
+    expect(cacheKeyFor("WXHIGH", "WXHIGH-AUS-2610120359")).toBe("WXHIGH-AUS-2610120359");
+    expect(cacheKeyFor("WXHIGH", "WXHIGH-DCA-2610120359")).toBe("WXHIGH-DCA-2610120359");
+    expect(cacheKeyFor("NFL", "NFL-2610112005-DEN-LAC-M")).toBe("NFL-2610112005-DEN-LAC-M");
+    expect(cacheKeyFor("ETH", "BTC2610312100")).toBe("BTC2610312100");
+    expect(cacheKeyFor("FED", "FED")).toBe("FED");
+  });
 });
 
 describe("laDayOf", () => {
@@ -110,12 +137,42 @@ describe("searchBody", () => {
       excludeDomains: [...EXCLUDED_DOMAINS],
       highlightsOptions: { enabled: true, maxCharacters: 800 },
       descriptionMaxCharacters: 300,
-      timeoutOpts: { milliseconds: 8000, behavior: "return-partial" },
+      timeoutOpts: { milliseconds: 4000, behavior: "return-partial" },
       tags: ["hunch", "card-context"],
     });
     expect(EXCLUDED_DOMAINS).toContain("kalshi.com");
     expect(EXCLUDED_DOMAINS).toContain("oddsshark.com");
     expect(EXCLUDED_DOMAINS).toHaveLength(13);
+  });
+
+  it("carries the tier's API timeout and nothing else new", () => {
+    const broad = searchBody("q news", BROAD_FRESHNESS, TIER2_BUDGET.apiTimeoutMs);
+    expect(broad.freshness).toBe("last_month");
+    expect(broad.timeoutOpts).toEqual({ milliseconds: 3000, behavior: "return-partial" });
+    expect(broad.numResults).toBe(10);
+    expect(Object.keys(broad).sort()).toEqual(Object.keys(searchBody("q", "last_week")).sort());
+  });
+});
+
+describe("search budgets", () => {
+  it("gives tier 1 at most 4.5 s and tier 2 at most 3.5 s, each with a partial answer asked for 0.5 s earlier", () => {
+    expect(TIER1_BUDGET).toEqual({ apiTimeoutMs: 4000, abortMs: 4500 });
+    expect(TIER2_BUDGET).toEqual({ apiTimeoutMs: 3000, abortMs: 3500 });
+  });
+
+  it("keeps the tier budget while enough time is left", () => {
+    expect(budgetWithin(TIER1_BUDGET, 7000)).toEqual(TIER1_BUDGET);
+    expect(budgetWithin(TIER2_BUDGET, 3500)).toEqual(TIER2_BUDGET);
+  });
+
+  it("shortens the budget to the time left", () => {
+    expect(budgetWithin(TIER2_BUDGET, 2400.7)).toEqual({ apiTimeoutMs: 1900, abortMs: 2400 });
+  });
+
+  it("gives up when too little time is left", () => {
+    expect(budgetWithin(TIER2_BUDGET, 1499)).toBeNull();
+    expect(budgetWithin(TIER2_BUDGET, 0)).toBeNull();
+    expect(budgetWithin(TIER2_BUDGET, -200)).toBeNull();
   });
 });
 
