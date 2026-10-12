@@ -8,6 +8,7 @@ import { TimeoutError, withTimeout } from "../_lib/async";
 import { describe, errorJson, handle, json, readJsonObject } from "../_lib/http";
 import { revealPcts } from "../_lib/odds";
 import { statusFrom } from "../_lib/status";
+import { tradeIdOf } from "../_lib/trade";
 import { isSide, requireString, sessionModeOf } from "../_lib/validate";
 import { round2 } from "../_lib/wallet";
 
@@ -175,6 +176,7 @@ export function POST(req: Request): Promise<Response> {
       receipt,
       cost,
       balanceAfter,
+      tradeId: tradeIdOf(inserted.swipe.id),
       status,
     };
     return json(reveal);

@@ -10,13 +10,10 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
-  type TextInputProps,
 } from "react-native";
 import Animated, {
   Easing,
-  useAnimatedProps,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -59,7 +56,6 @@ export type SheetState =
     };
 
 const SHEET_TRAVEL = 720;
-const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
 
 export const RevealSheet = memo(function RevealSheet({
   state,
@@ -280,6 +276,13 @@ function RevealBody({ reveal, card }: { reveal: Reveal; card: CardPublic }) {
       : null;
 
   const liveOrder = Boolean(receipt?.orderId);
+  // Paid from the wallet on a market the sandbox does not list: no exchange order.
+  const walletOnly = paid && !receipt;
+  const receiptTitle = walletOnly
+    ? "Wallet trade"
+    : liveOrder
+      ? credit.liveOrder
+      : "Receipt";
 
   return (
     <View style={styles.bodyGap}>
@@ -320,12 +323,10 @@ function RevealBody({ reveal, card }: { reveal: Reveal; card: CardPublic }) {
         <View
           testID="receipt"
           style={styles.receipt}
-          accessibilityLabel={liveOrder ? credit.liveOrder : "Receipt"}
+          accessibilityLabel={receiptTitle}
         >
           <View style={styles.receiptHeader}>
-            <Text style={styles.receiptTitle}>
-              {liveOrder ? credit.liveOrder : "Receipt"}
-            </Text>
+            <Text style={styles.receiptTitle}>{receiptTitle}</Text>
             <View style={[styles.modeTag, paid && styles.modeTagPaid]}>
               <Text
                 style={[styles.modeTagText, paid && styles.modeTagTextPaid]}
@@ -336,10 +337,23 @@ function RevealBody({ reveal, card }: { reveal: Reveal; card: CardPublic }) {
           </View>
           <View style={styles.receiptRows}>
             <ReceiptRow label="Mode" value={paid ? "Paid" : "Practice"} />
-            <ReceiptRow label="Order id" value={receipt?.orderId ?? "none"} />
+            <ReceiptRow
+              label={walletOnly ? "Trade id" : "Order id"}
+              value={
+                walletOnly
+                  ? (reveal.tradeId ?? "recorded")
+                  : (receipt?.orderId ?? "none")
+              }
+            />
             <ReceiptRow
               label="Status"
-              value={receipt ? receipt.status.replace("_", " ") : "not placed"}
+              value={
+                walletOnly
+                  ? "filled from wallet"
+                  : receipt
+                    ? receipt.status.replace("_", " ")
+                    : "not placed"
+              }
             />
             <ReceiptRow
               label="Contracts"
@@ -350,6 +364,12 @@ function RevealBody({ reveal, card }: { reveal: Reveal; card: CardPublic }) {
             {receipt ? (
               <ReceiptRow label="Price" value={formatPrice(receipt.price)} />
             ) : null}
+            {walletOnly ? (
+              <Text style={type.small}>
+                This market is not on the Gemini sandbox yet, so no exchange
+                order was placed.
+              </Text>
+            ) : null}
           </View>
         </View>
       </Animated.View>
@@ -357,35 +377,44 @@ function RevealBody({ reveal, card }: { reveal: Reveal; card: CardPublic }) {
   );
 }
 
-/** A percentage that counts up on the UI thread. No React state per frame. */
+/**
+ * A percentage that counts up from zero. React owns the text, so a later
+ * re-render of the sheet can never put a stale number back on screen.
+ */
 function CountUp({ value, align }: { value: number; align: "left" | "right" }) {
-  const v = useSharedValue(0);
+  const target = Number.isFinite(value) ? Math.round(value) : 0;
+  const [shown, setShown] = useState(0);
+
   useEffect(() => {
-    v.set(0);
-    v.set(
-      withTiming(value, {
-        duration: motion.countMs,
-        easing: Easing.out(Easing.cubic),
-      }),
-    );
-  }, [value, v]);
-  const animatedProps = useAnimatedProps(
-    () =>
-      ({
-        text: `${Math.round(v.get())}%`,
-      }) as unknown as Partial<TextInputProps>,
-  );
+    let frame = 0;
+    let start: number | null = null;
+    let last: number | null = null;
+    const tick = (now: number) => {
+      if (start === null) start = now;
+      const elapsed = now - start;
+      // Anything that is not clearly mid-count ends on the exact number.
+      const done = !(elapsed < motion.countMs);
+      const t = done ? 1 : Math.max(0, elapsed / motion.countMs);
+      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      const next = done ? target : Math.round(target * eased);
+      if (next !== last) {
+        last = next;
+        setShown(next);
+      }
+      if (!done) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [target]);
+
   return (
-    <AnimatedTextInput
-      editable={false}
-      scrollEnabled={false}
-      underlineColorAndroid="transparent"
-      defaultValue="0%"
+    <Text
       maxFontSizeMultiplier={1.2}
-      accessibilityLabel={`${Math.round(value)} percent`}
+      accessibilityLabel={`${target} percent`}
       style={[styles.hero, align === "right" && styles.heroRight]}
-      animatedProps={animatedProps}
-    />
+    >
+      {`${shown}%`}
+    </Text>
   );
 }
 

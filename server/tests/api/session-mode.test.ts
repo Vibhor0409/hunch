@@ -33,6 +33,8 @@ import type { CardPublic, LaneFilter, PlayerStatus, Profile, Reveal, Wallet } fr
 
 const BASE_URL = (process.env.API_BASE_URL ?? "http://localhost:3000").replace(/\/+$/, "");
 const REQUEST_TIMEOUT_MS = 20_000;
+/** Hunch's own id on every stored swipe (app/api/_lib/trade.ts): "HN-" and 8 uppercase hex characters. */
+const TRADE_ID = /^HN-[0-9A-F]{8}$/;
 /** Message of the not_placed receipt on a practice-session swipe (app/api/swipe/route.ts). */
 const PRACTICE_SESSION_MESSAGE = "Practice session. Scores Edge only.";
 /** Lanes read to collect cards; long-dated lanes first, they do not close mid-test. */
@@ -193,6 +195,7 @@ describe.skipIf(!process.env.API_BASE_URL)("Hunch API session mode (practice / l
     const { card, reveal } = result;
 
     expect(reveal.mode, "a live session swipe under the cap with balance is paid").toBe("paid");
+    expect(reveal.tradeId, "a paid swipe carries a Hunch trade id").toMatch(TRADE_ID);
     expect(reveal.cost, "cost").toBeGreaterThan(0);
     expect(reveal.cost, "cost never exceeds the amount per trade").toBeLessThanOrEqual(before.stakePerTrade + 0.005);
     expect(reveal.contracts, "contracts").toBeGreaterThan(0);
@@ -281,6 +284,7 @@ describe.skipIf(!process.env.API_BASE_URL)("Hunch API session mode (practice / l
 
       expect(reveal.side).toBe("yes");
       expect(reveal.mode, "mode").toBe("practice");
+      expect(reveal.tradeId, "a practice swipe carries a Hunch trade id").toMatch(TRADE_ID);
       expect(reveal.cost, "cost").toBe(0);
       expect(reveal.stake, "stake").toBe(0);
       expect(reveal.contracts, "contracts").toBe(0);

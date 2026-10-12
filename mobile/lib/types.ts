@@ -56,6 +56,7 @@ export interface Reveal {
   receipt: OrderReceipt | null; // null for practice swipes that placed no order
   cost: number; // dollars debited from the wallet (contracts x price), 0 for practice
   balanceAfter: number; // wallet balance after this swipe
+  tradeId?: string; // Hunch's own id for this stored call, for example "HN-3F9A21C7"; shown on wallet trades that have no exchange order
   status: PlayerStatus;
 }
 
